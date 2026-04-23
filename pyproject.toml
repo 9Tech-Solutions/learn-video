@@ -134,6 +134,8 @@ module = [
     "tenacity.*",
     "dotenv.*",
     "huggingface_hub.*",
+    # httpx is a langchain-google-genai transitive dep; absent in lint-only CI.
+    "httpx",
     # scripts/install.py is not inside a package; test file sys.path-inserts it.
     "install",
 ]
