@@ -250,16 +250,15 @@ def invoke_structured(model, schema: type[T], messages) -> T:
                 raise TransientError(
                     f"{schema.__name__}: empty response from model"
                 ) from exc
-        # Pre-declare as Any so both branches' assignments check cleanly
-        # across mypy versions (json_repair.loads has no stubs; stdlib
-        # json.loads has a narrower signature).
-        repair_loads: Any
+        # Prefer json_repair; fall back to stdlib json. importlib keeps this
+        # out of mypy's redef/type-narrowing heuristics which differ across
+        # versions (the try/except/import-as form was flaky in CI).
+        import importlib
         try:
-            from json_repair import loads as repair_loads
+            _repair_module = importlib.import_module("json_repair")
         except ImportError:  # pragma: no cover
-            import json as _json
-
-            repair_loads = _json.loads
+            _repair_module = importlib.import_module("json")
+        repair_loads: Any = _repair_module.loads
         repaired = repair_loads(stripped)
         if not repaired:
             # json_repair coerces unparseable text to "" or [] → same treatment
