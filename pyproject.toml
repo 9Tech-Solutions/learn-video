@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "learn-video"
-version = "0.1.0"
+version = "0.2.0"
 description = "Extract reusable knowledge from video — fused audio + visual notes aligned to teaching moments."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -23,14 +23,6 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
 ]
 dependencies = [
-    "yt-dlp>=2026.1.0",
-    "faster-whisper>=1.2.0",
-    "langgraph>=1.1.0,<2.0",
-    "langchain>=1.2.0,<2.0",
-    "langchain-core>=1.0.0,<2.0",
-    "langchain-google-genai>=4.2.0,<5.0",
-    "langchain-anthropic>=1.4.0,<2.0",
-    "langchain-ollama>=1.1.0,<2.0",
     "pydantic>=2.9,<3.0",
     "tenacity>=9.0",
     "json-repair>=0.30",
@@ -39,7 +31,24 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# `lite` — Gemini-only stack. Covers default --tier=lite and --tier=pro.
+lite = [
+    "yt-dlp>=2026.1.0",
+    "faster-whisper>=1.2.0",
+    "langgraph>=1.1.0,<2.0",
+    "langchain>=1.2.0,<2.0",
+    "langchain-core>=1.0.0,<2.0",
+    "langchain-google-genai>=4.2.0,<5.0",
+]
+# `full` — lite + Anthropic (for --tier=max) + Ollama (for --offline).
+full = [
+    "learn-video[lite]",
+    "langchain-anthropic>=1.4.0,<2.0",
+    "langchain-ollama>=1.1.0,<2.0",
+]
+# `dev` — everything plus test runners. Required for contributing.
 dev = [
+    "learn-video[full]",
     "pytest>=8.0",
     "pytest-cov>=5.0",
 ]
