@@ -20,7 +20,7 @@ class TestFilterTargets(unittest.TestCase):
         out = _filter_targets(
             [
                 Target(t=10.0, why="a"),
-                Target(t=10.5, why="b"),  # dropped — within 2s
+                Target(t=10.5, why="b"),  # dropped, within 2s
                 Target(t=20.0, why="c"),
             ],
             duration_s=100.0,

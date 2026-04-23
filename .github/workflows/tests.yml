@@ -61,7 +61,7 @@ jobs:
       - name: Installer non-interactive smoke test
         # Prove the installer parses args, resolves paths, and exits clean
         # across OS × Python. --pack=lite keeps the install small (~200 MB
-        # vs 350 for dev) — the installer's own code path is identical
+        # vs 350 for dev); the installer's own code path is identical
         # regardless of pack. --no-venv reuses actions/setup-python;
         # --skip-smoke-test because the real test suite runs next;
         # dummy key so step_keys doesn't prompt.

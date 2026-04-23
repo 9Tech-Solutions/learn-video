@@ -6,7 +6,7 @@ from learn_video.vision import _extract_visual_and_fused, _parse_timeline
 class TestExtractVisualAndFused(unittest.TestCase):
     def test_extracts_both(self):
         body = """VISUAL: code editor showing Express route
-FUSED: basic route returning JSON — they refactor this later"""
+FUSED: basic route returning JSON; they refactor this later"""
         visual, fused = _extract_visual_and_fused(body)
         self.assertEqual(visual, "code editor showing Express route")
         self.assertIn("basic route", fused)

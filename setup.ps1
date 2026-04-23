@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# learn-video — PowerShell shim that delegates to scripts/install.py.
+# learn-video: PowerShell shim that delegates to scripts/install.py.
 #
 # If you see an execution-policy error, run this once in the current shell:
 #   Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass

@@ -46,7 +46,7 @@ class TestStripOverlap(unittest.TestCase):
         self.assertEqual(_strip_overlap("foo bar", "foo bar"), "")
 
     def test_preserves_word_boundary(self):
-        # "and" appears inside "sandbox" — we must not cut mid-word
+        # "and" appears inside "sandbox"; we must not cut mid-word
         self.assertEqual(
             _strip_overlap("testing and", "sandbox is fine"),
             "sandbox is fine",

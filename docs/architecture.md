@@ -4,7 +4,7 @@
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│  pipeline.py   (LangGraph StateGraph — narrow)       │
+│  pipeline.py   (LangGraph StateGraph, narrow)        │
 │    • 2 conditional edges: short-path, kind-path      │
 │    • nodes: ingest, transcribe, probe_short,         │
 │             probe_kind, target, keyframes, vision,   │
@@ -38,20 +38,20 @@ START → ingest → transcribe → probe_short
 
 Two conditional edges:
 
-- `probe_short` — routes to the short-video fast path (single Gemini File API upload) when `duration ≤ 60 s` AND `tier ∈ {lite, pro}` AND not `--offline`.
-- `probe_kind` — routes to `summary` when the 5-frame classifier returns `audio` with ≥ 0.65 confidence; otherwise to the visual path.
+- `probe_short`: routes to the short-video fast path (single Gemini File API upload) when `duration ≤ 60 s` AND `tier ∈ {lite, pro}` AND not `--offline`.
+- `probe_kind`: routes to `summary` when the 5-frame classifier returns `audio` with ≥ 0.65 confidence; otherwise to the visual path.
 
-Both routers have explicit fall-backs — unknown kinds take the visual path, low confidence takes the visual path. "Default to doing the full pipeline" means we never silently underprocess a video.
+Both routers have explicit fall-backs: unknown kinds take the visual path, low confidence takes the visual path. "Default to doing the full pipeline" means we never silently underprocess a video.
 
 ## Why LangGraph here and not just LangChain
 
-LangChain alone is not the portability strategy — the strategy is `model_client.py`. LangGraph is used narrowly because the pipeline has real graph semantics:
+LangChain alone is not the portability strategy; the strategy is `model_client.py`. LangGraph is used narrowly because the pipeline has real graph semantics:
 
 - Conditional edges (short-path, kind-path) live cleanly in a StateGraph.
-- Future retries — "vision 429 → fallback to `pro` tier and retry just that frame" or "targets empty → widen prompt and retry window" — are natural graph edges.
+- Future retries ("vision 429 → fallback to `pro` tier and retry just that frame" or "targets empty → widen prompt and retry window") are natural graph edges.
 - Durable execution (LangGraph checkpointers) is available if we want in-flight resumability later, but isn't v1: artifact-based cache IS our checkpointer.
 
-We do **not** use LangChain agents, tool-calling abstractions, or chain composition — those are overkill for a linear-ish pipeline and they leak LangChain semantics into stage code.
+We do **not** use LangChain agents, tool-calling abstractions, or chain composition; those are overkill for a linear-ish pipeline and they leak LangChain semantics into stage code.
 
 ## State schema
 
@@ -64,10 +64,10 @@ We do **not** use LangChain agents, tool-calling abstractions, or chain composit
 
 Pydantic models carry the structured payloads:
 
-- `Target(t, why)` and `TargetList(targets: list[Target])` — `targets` has `default_factory=list` so empty responses don't crash validation.
+- `Target(t, why)` and `TargetList(targets: list[Target])`: `targets` has `default_factory=list` so empty responses don't crash validation.
 - `FrameRef(t, image_path, transcript_window)`
 - `FusedBlock(t, audio, visual, fused)`
-- `VisionInput(text, image_b64, video_path)` — exactly one of `image_b64` / `video_path` is set per call; `video_path` is Gemini-only.
+- `VisionInput(text, image_b64, video_path)`: exactly one of `image_b64` / `video_path` is set per call; `video_path` is Gemini-only.
 
 ## Cross-provider multimodal
 
@@ -91,11 +91,11 @@ Sliding-window in-process limiter per model id:
 _RATE_LIMITS = {
     "google_genai:gemini-flash-lite-latest": (13, 60.0),  # cap 15 RPM, buffered
     "google_genai:gemini-flash-latest":       (8,  60.0),  # cap 10 RPM, buffered
-    # Claude / Ollama — no in-process gate (plenty of headroom)
+    # Claude / Ollama: no in-process gate (plenty of headroom)
 }
 ```
 
-`_throttle(model_id)` keeps a `deque[float]` of recent request timestamps per model; if adding one would exceed the cap, it sleeps until the oldest entry in the window expires. The deque supports concurrent vision fan-out — 6 threads can contend on Flash Lite safely, provider is never asked to do more than 13 req / 60 s.
+`_throttle(model_id)` keeps a `deque[float]` of recent request timestamps per model; if adding one would exceed the cap, it sleeps until the oldest entry in the window expires. The deque supports concurrent vision fan-out: 6 threads can contend on Flash Lite safely, provider is never asked to do more than 13 req / 60 s.
 
 ## Retry policy
 
@@ -106,7 +106,7 @@ _RATE_LIMITS = {
 - `anthropic.RateLimitError`, `APIConnectionError`
 - `httpx.TransportError`, `httpx.TimeoutException`
 
-Tenacity retries 3 times with `wait_random_exponential(multiplier=5, max=60)`. Per-frame vision failures don't kill the run — they log a warning and drop that one block.
+Tenacity retries 3 times with `wait_random_exponential(multiplier=5, max=60)`. Per-frame vision failures don't kill the run; they log a warning and drop that one block.
 
 ## Caching and idempotency
 

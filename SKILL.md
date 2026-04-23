@@ -1,6 +1,6 @@
 ---
 name: learn-video
-description: Extract reusable knowledge from a YouTube/TikTok/Vimeo URL — a 6-stage audio+visual fused timeline (ingest → transcribe → probe → target/summary → vision → classify → fuse). Hands off to /learn-eval so the output lands in the right bin (skill, rule, tip, note, discard). Use this when the user shares a video URL and wants extracted notes, not when they want the video downloaded or clipped.
+description: Extract reusable knowledge from a YouTube/TikTok/Vimeo URL via a 6-stage audio+visual fused timeline (ingest → transcribe → probe → target/summary → vision → classify → fuse). Hands off to /learn-eval so the output lands in the right bin (skill, rule, tip, note, discard). Use this when the user shares a video URL and wants extracted notes, not when they want the video downloaded or clipped.
 license: MIT. See LICENSE.
 ---
 
@@ -14,12 +14,12 @@ Unlike transcript-only skills, this one uses an LLM to pick which timestamps nee
 
 - User shares a tutorial, talk, or short-form dev clip and wants the knowledge, not the video.
 - User wants a consistent pipeline from many videos (e.g. an entire creator's channel) into the ECC knowledge system.
-- Output needs to flow into `/learn-eval` — the `recommended-form:` header in `fused.md` is designed for that handoff.
+- Output needs to flow into `/learn-eval`: the `recommended-form:` header in `fused.md` is designed for that handoff.
 
 ## When *not* to use
 
-- User wants the video file itself, subtitles, or clipped highlights — use `yt-dlp` or a clipping tool directly.
-- Only the raw transcript is needed — a lightweight transcript skill is faster (no vision calls, no rate limiting).
+- User wants the video file itself, subtitles, or clipped highlights; use `yt-dlp` or a clipping tool directly.
+- Only the raw transcript is needed; a lightweight transcript skill is faster (no vision calls, no rate limiting).
 - Live streams or content gated behind authentication.
 
 ## Quick start
@@ -71,9 +71,9 @@ The slash command `~/.claude/commands/learn-video.md` drives Claude to:
 
 Only `model_client.py` imports `langchain-*`. Every stage calls:
 
-- `build_chat_model(model_id, **kwargs)` — `<provider>:<model>` id strings (e.g. `google_genai:gemini-flash-lite-latest`, `anthropic:claude-opus-4-7`, `ollama:qwen2.5vl:3b`).
-- `invoke_structured(model, schema, messages)` — Pydantic schema validation with a `json_repair` fallback and an empty-response short-circuit.
-- `invoke_vision(model, vision_input)` — portable `image_url` + data-URL shape that works on Gemini, Claude, and Ollama; `video_path` is Gemini-only (File API upload).
+- `build_chat_model(model_id, **kwargs)`: `<provider>:<model>` id strings (e.g. `google_genai:gemini-flash-lite-latest`, `anthropic:claude-opus-4-7`, `ollama:qwen2.5vl:3b`).
+- `invoke_structured(model, schema, messages)`: Pydantic schema validation with a `json_repair` fallback and an empty-response short-circuit.
+- `invoke_vision(model, vision_input)`: portable `image_url` + data-URL shape that works on Gemini, Claude, and Ollama; `video_path` is Gemini-only (File API upload).
 
 A sliding-window rate limiter (13 req / 60s on Flash Lite) gates every provider call. To swap models, edit `TIER_MODELS` in `config.py`. Stage code does not change.
 
@@ -86,11 +86,11 @@ A sliding-window rate limiter (13 req / 60s on Flash Lite) gates every provider 
 | `max` | `gemini-flash-lite-latest` | `claude-opus-4-7` | Uses Claude quota |
 | `--offline` | `qwen2.5vl:3b` | `qwen2.5vl:3b` | Local Ollama, slow |
 
-Targeting always stays on Flash Lite — it's a cheap text task, and keeping the premium budget for vision is almost always correct.
+Targeting always stays on Flash Lite; it's a cheap text task, and keeping the premium budget for vision is almost always correct.
 
 ## Cache
 
-`~/.claude/cache/learn-video/<video-id>/` contains `meta.json`, `video.*`, `captions.vtt`, `transcript.json`, `targets.json`, `frames/*.jpg`, `fused.md`. Every stage checks its artifact before running — re-runs on the same URL skip straight to whatever changed.
+`~/.claude/cache/learn-video/<video-id>/` contains `meta.json`, `video.*`, `captions.vtt`, `transcript.json`, `targets.json`, `frames/*.jpg`, `fused.md`. Every stage checks its artifact before running; re-runs on the same URL skip straight to whatever changed.
 
 ```bash
 python -m learn_video.cli cache-info             # list cached videos
@@ -109,7 +109,7 @@ python -m learn_video.cli cache-clean all        # nuke everything
 
 ## Requirements
 
-- Python 3.13 (tested; 3.11+ should work — `tomllib` fallback to `tomli` already in place)
+- Python 3.13 (tested; 3.11+ should work, `tomllib` fallback to `tomli` already in place)
 - `ffmpeg` on PATH
 - `yt-dlp` on PATH (installed via `pip install -r requirements.txt`)
 - `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) for the default `lite` / `pro` tiers

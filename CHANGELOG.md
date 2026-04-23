@@ -4,37 +4,28 @@ All notable changes to this project are documented here. Format follows [Keep a 
 
 ## [Unreleased]
 
-### Added
-
-- **Ruff + mypy** wired in as the project's static-analysis tools. Configured in `pyproject.toml` with a moderate rule set (`E`, `F`, `W`, `I`, `B`, `UP`, `SIM`) at line length 100.
-- **CI lint job** — new `lint + typecheck` job in `.github/workflows/tests.yml`, runs on every push / PR before the 6-cell test matrix.
-- `ruff` and `mypy` added to the `[dev]` extras group.
-
 ### Changed
 
-- Replaced `setattr(model, "_lv_model_id", ...)` with direct attribute assignment (ruff `B010`).
-- Collapsed a nested `if` in `transcribe._strip_overlap` into a single condition (ruff `SIM102`).
-- Replaced a `try/except/pass` with `contextlib.suppress(Exception)` in `model_client.tag_model` (ruff `SIM105`).
-- Replaced `typing.Type` with built-in `type` in `invoke_structured` (ruff `UP006`).
-- Removed 14 redundant `# type: ignore[import-not-found]` pragmas — provider imports are now covered by `[[tool.mypy.overrides]]` with `ignore_missing_imports = true`.
-- Tightened test assertions from bare `assertRaises(Exception)` to `assertRaises(ValidationError)` (ruff `B017`).
-- Narrowed `init_chat_model` call to use an explicit `temperature=0` keyword so mypy can match an overload.
-- `VisionInput` content lists annotated as `list[str | dict[str, Any]]` so they satisfy LangChain's covariant `HumanMessage` content parameter.
-- Gemini File API code handles `uploaded.name` and `info.uri` Optional-ness explicitly.
-- `cli._run` casts the input dict to `PipelineState` (TypedDict) for mypy.
+- **Docs**: README, CHANGELOG, CONTRIBUTING, `docs/*.md`, `SKILL.md`, and `commands/learn-video.md` rewritten to drop em dashes (U+2014) in favor of hyphens, commas, parentheses, or sentence splits. Applies to Python docstrings / comments and the single `pyproject.toml` comment as well.
+- **Docs**: README test-count claim synced with the actual suite.
+- **Chore**: `learn_video.__version__` bumped to `0.2.0` so the in-package constant matches `pyproject.toml`.
 
-## [0.2.0] — 2026-04-23
+## [0.2.0] - 2026-04-23
 
-Installer rewrite for cross-platform UX. No runtime pipeline changes.
+Installer rewrite for cross-platform UX, plus a full lint + typecheck pass. No runtime pipeline changes.
 
 ### Added
 
-- **`scripts/install.py`** — stdlib-only interactive installer with a six-step flow (prereqs → venv → pack → install → keys → smoke-test) plus a progress spinner, hidden-input key prompt, and atomic `.env` writing. Runs on Windows / macOS / Linux from one codepath.
-- **`setup.ps1`** — PowerShell shim that delegates to the Python installer (matches the existing `setup.sh` behavior).
+- **`scripts/install.py`**: stdlib-only interactive installer with a six-step flow (prereqs → venv → pack → install → keys → smoke-test) plus a progress spinner, hidden-input key prompt, and atomic `.env` writing. Runs on Windows / macOS / Linux from one codepath.
+- **`setup.ps1`**: PowerShell shim that delegates to the Python installer (matches the existing `setup.sh` behavior).
 - **`[project.optional-dependencies]`** groups `lite`, `full`, and `dev` in `pyproject.toml`. `pip install .[lite]` now pulls only the Gemini stack (~200 MB) instead of the full 350 MB; `full` adds Anthropic + Ollama; `dev` adds pytest + coverage.
 - **Non-interactive flags** for CI / Docker use: `--yes`, `--pack={lite,full,dev}`, `--no-venv`, `--venv-path`, `--gemini-key`, `--anthropic-key`, `--skip-smoke-test`, `--quiet`.
-- **`learn_video/tests/test_installer.py`** — 28 new tests covering prereq detection, pack parsing, venv-path resolution, atomic env-file writing, spinner behavior, and argparse.
-- **CI installer smoke test** — new step in `.github/workflows/tests.yml` that runs the installer non-interactively on every matrix cell, catching cross-platform regressions before release.
+- **`learn_video/tests/test_installer.py`**: 28 new tests covering prereq detection, pack parsing, venv-path resolution, atomic env-file writing, spinner behavior, and argparse.
+- **CI installer smoke test**: new step in `.github/workflows/tests.yml` that runs the installer non-interactively on every matrix cell, catching cross-platform regressions before release.
+- **Ruff + mypy** wired in as the project's static-analysis tools. Configured in `pyproject.toml` with a moderate rule set (`E`, `F`, `W`, `I`, `B`, `UP`, `SIM`) at line length 100.
+- **CI lint job**: new `lint + typecheck` job in `.github/workflows/tests.yml`, runs on every push / PR before the 6-cell test matrix.
+- **CI test workflow**: GitHub Actions job running the pytest suite on a 6-cell matrix (Python 3.11 / 3.12 / 3.13 across Linux / macOS / Windows). Adds status badges to README.
+- `ruff` and `mypy` added to the `[dev]` extras group.
 
 ### Changed
 
@@ -42,6 +33,17 @@ Installer rewrite for cross-platform UX. No runtime pipeline changes.
 - **`pyproject.toml`** top-level `dependencies` now contains only the base-runtime needs (`pydantic`, `tenacity`, `json-repair`, `python-dotenv`, `tomli`). Provider SDKs live in extras groups.
 - **`requirements.txt`** kept as a full-install shortcut with a header comment pointing at the extras workflow.
 - **`README.md`** Quickstart section rewritten to lead with the installer walk-through, with non-interactive and manual install paths documented below.
+- **`README.md`** "Why this exists" section rewritten with human-first framing focused on the reader's need.
+- Replaced `setattr(model, "_lv_model_id", ...)` with direct attribute assignment (ruff `B010`).
+- Collapsed a nested `if` in `transcribe._strip_overlap` into a single condition (ruff `SIM102`).
+- Replaced a `try/except/pass` with `contextlib.suppress(Exception)` in `model_client.tag_model` (ruff `SIM105`).
+- Replaced `typing.Type` with built-in `type` in `invoke_structured` (ruff `UP006`).
+- Removed 14 redundant `# type: ignore[import-not-found]` pragmas. Provider imports are now covered by `[[tool.mypy.overrides]]` with `ignore_missing_imports = true`.
+- Tightened test assertions from bare `assertRaises(Exception)` to `assertRaises(ValidationError)` (ruff `B017`).
+- Narrowed `init_chat_model` call to use an explicit `temperature=0` keyword so mypy can match an overload.
+- `VisionInput` content lists annotated as `list[str | dict[str, Any]]` so they satisfy LangChain's covariant `HumanMessage` content parameter.
+- Gemini File API code handles `uploaded.name` and `info.uri` Optional-ness explicitly.
+- `cli._run` casts the input dict to `PipelineState` (TypedDict) for mypy.
 
 ### Fixed
 
@@ -49,9 +51,9 @@ Installer rewrite for cross-platform UX. No runtime pipeline changes.
 
 ### Testing
 
-- 74 → 102 unit tests (all green). New tests are hermetic — no subprocess or network calls; interactive flows are not exercised (covered by the CI smoke test and manual verification).
+- 74 → 104 unit tests (all green). New tests are hermetic: no subprocess or network calls; interactive flows are not exercised (covered by the CI smoke test and manual verification).
 
-## [0.1.0] — 2026-04-23
+## [0.1.0] - 2026-04-23
 
 First public release. Verified end-to-end on 12 live URLs (6 TikToks, 4 YouTube, 2 YouTube Shorts) with a 2h 39min talk exercising the sliding-window path.
 
@@ -75,7 +77,7 @@ First public release. Verified end-to-end on 12 live URLs (6 TikToks, 4 YouTube,
 
 - Artifact-based cache at `~/.claude/cache/learn-video/<video-id>/`; stage-level idempotency.
 - `cache-info` and `cache-clean` CLI subcommands.
-- VTT scroll-caption overlap stripping (`_strip_overlap`) — removes the triplicate-text artifact in YouTube auto-captions.
+- VTT scroll-caption overlap stripping (`_strip_overlap`): removes the triplicate-text artifact in YouTube auto-captions.
 
 ### Resilience
 

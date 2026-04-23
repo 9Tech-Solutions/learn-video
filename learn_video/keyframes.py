@@ -1,4 +1,4 @@
-"""Stage 4 — ffmpeg extracts one keyframe per targeted timestamp.
+"""Stage 4: ffmpeg extracts one keyframe per targeted timestamp.
 
 Pure Python, no LLM. Uses ``ffmpeg -ss <t> -i <video> -frames:v 1 <out.jpg>``.
 The transcript_window attached to each frame is a ±10s snippet around the
@@ -49,7 +49,7 @@ def node(state: dict[str, Any]) -> dict[str, Any]:
 
     targets: list[Target] = list(state.get("targets") or [])
     if not targets:
-        logging_.warn("no targets — skipping keyframes")
+        logging_.warn("no targets; skipping keyframes")
         return {"frames": []}
 
     video_path_str = state.get("video_path")

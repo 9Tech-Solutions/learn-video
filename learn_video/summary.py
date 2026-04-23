@@ -1,4 +1,4 @@
-"""Transcript-only summary path — used when probe_kind says "audio".
+"""Transcript-only summary path: used when probe_kind says "audio".
 
 Replaces target → keyframes → vision for podcasts, interviews, and
 talking-head videos. One LLM call that chunks the transcript into topical
@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 from . import cache, config, logging_, model_client
 from .state import FusedBlock
 
-# Max transcript chars sent to the model — Flash Lite handles ~1M tokens but
+# Max transcript chars sent to the model. Flash Lite handles ~1M tokens but
 # trimming keeps latency reasonable. ~50k chars ≈ ~45 min of dense speech.
 _TRANSCRIPT_CHAR_CAP = 50_000
 
@@ -35,7 +35,7 @@ class ChapterList(BaseModel):
 _SYSTEM_PROMPT = """You are summarizing a transcript into chapters of a talk, podcast, or interview.
 
 For each chapter return:
-- t_start, t_end (seconds from video start — use transcript timestamps)
+- t_start, t_end (seconds from video start, use transcript timestamps)
 - topic (5–12 words, specific not generic)
 - key_points (2–5 items, each a complete sentence conveying a reusable insight)
 
@@ -64,7 +64,7 @@ def _load_segments(paths: cache.CachePaths) -> list[dict[str, Any]]:
 
 
 def _format_with_timestamps(segments: list[dict[str, Any]]) -> str:
-    """One line per segment, prefixed with [mm:ss] — gives the model hard
+    """One line per segment, prefixed with [mm:ss]; gives the model hard
     timestamps to cite instead of guessing."""
     lines: list[str] = []
     total = 0
@@ -113,7 +113,7 @@ def node(state: dict[str, Any]) -> dict[str, Any]:
 
     segments = _load_segments(paths)
     if not segments:
-        logging_.warn("summary path: no segments — emitting one catch-all block")
+        logging_.warn("summary path: no segments, emitting one catch-all block")
         return {
             "fused_blocks": [
                 FusedBlock(
@@ -126,7 +126,7 @@ def node(state: dict[str, Any]) -> dict[str, Any]:
         }
 
     model_id = config.resolve_model_id(
-        role="targeting",  # reuse cheap tier — this is text-only
+        role="targeting",  # reuse cheap tier, this is text-only
         tier=state.get("tier", "lite"),
         offline=bool(state.get("offline")),
         model_override=None,

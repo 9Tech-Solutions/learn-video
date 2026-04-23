@@ -27,7 +27,7 @@ class TestSlidingWindowThrottle(unittest.TestCase):
         self.assertLess(time.monotonic() - t0, 0.2)
 
     def test_14th_request_waits_for_oldest_to_expire(self):
-        """With cap=13 per 60s, the 14th request should wait — but we
+        """With cap=13 per 60s, the 14th request should wait; but we
         patch time to avoid actually sleeping 60s in tests."""
         mid = "google_genai:gemini-flash-lite-latest"
         # Fill the window with timestamps that will appear to be 30s old
@@ -43,7 +43,7 @@ class TestSlidingWindowThrottle(unittest.TestCase):
 
             for _ in range(13):
                 model_client._throttle(mid)
-            # 14th call — should force a sleep until oldest expires.
+            # 14th call: should force a sleep until oldest expires.
             model_client._throttle(mid)
             self.assertTrue(mock_time.sleep.called)
             # Must have slept approximately 60s (the window) minus elapsed 0s.
@@ -51,7 +51,7 @@ class TestSlidingWindowThrottle(unittest.TestCase):
             self.assertGreaterEqual(slept_total, 59.9)
 
     def test_thread_safety(self):
-        """Hammer the limiter from many threads — total calls must never
+        """Hammer the limiter from many threads, total calls must never
         exceed the cap within the window."""
         mid = "google_genai:gemini-flash-lite-latest"
         timestamps: list[float] = []

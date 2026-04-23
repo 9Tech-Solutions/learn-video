@@ -1,4 +1,4 @@
-"""Video-kind probe — classify before paying full vision cost.
+"""Video-kind probe: classify before paying full vision cost.
 
 Samples 5 frames spread across the video, asks one Flash Lite call:
 "visual tutorial, audio-first (podcast/talking-head), or mixed?"
@@ -35,8 +35,8 @@ class VideoKindClassification(BaseModel):
 _PROMPT = """You see {n} frames evenly sampled across a video.
 
 Classify the video:
-- "visual": meaningful teaching-on-screen — code, diagrams, UI demos, slides
-- "audio": talking-head / podcast / interview / panel — static or irrelevant visuals
+- "visual": meaningful teaching-on-screen (code, diagrams, UI demos, slides)
+- "audio": talking-head / podcast / interview / panel (static or irrelevant visuals)
 - "mixed": swings between both (e.g. conference talk with slides + Q&A)
 
 Consider: if someone could get ~all the value from the transcript alone,
@@ -64,7 +64,7 @@ def node(state: dict[str, Any]) -> dict[str, Any]:
     video_id = state["video_id"]
     paths = cache.paths_for(video_id)
 
-    # Cache check — reuse prior probe if present and not --fresh.
+    # Cache check: reuse prior probe if present and not --fresh.
     meta = cache.read_meta(paths)
     if not state.get("fresh") and meta.get("video_kind"):
         logging_.info(
@@ -86,7 +86,7 @@ def node(state: dict[str, Any]) -> dict[str, Any]:
         return {
             "video_kind": "mixed",
             "video_kind_confidence": 0.0,
-            "video_kind_reason": "probe skipped — no video file available",
+            "video_kind_reason": "probe skipped; no video file available",
             "probe_model_id": "",
         }
 
@@ -133,7 +133,7 @@ def node(state: dict[str, Any]) -> dict[str, Any]:
     kind: VideoKind = classification.kind
     logging_.emit(
         "PROBE",
-        f"→ {kind} (confidence {classification.confidence:.2f}) — {classification.reason}",
+        f"→ {kind} (confidence {classification.confidence:.2f}): {classification.reason}",
     )
 
     cache.update_meta(

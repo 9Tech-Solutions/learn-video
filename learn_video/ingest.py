@@ -1,4 +1,4 @@
-"""Stage 1 — yt-dlp: download video + auto-captions, detect duration.
+"""Stage 1: yt-dlp downloads video + auto-captions, detects duration.
 
 Idempotent: re-runs short-circuit against the cache. Sets ``is_short_video``
 so the probe_short router in ``pipeline.py`` can branch.
@@ -112,7 +112,7 @@ def _find_caption(out_dir: Path) -> Path | None:
 
 
 def node(state: dict[str, Any]) -> dict[str, Any]:
-    """LangGraph node — returns the state keys it updates."""
+    """LangGraph node: returns the state keys it updates."""
     url = state["url"]
     video_id = state.get("video_id") or cache.derive_video_id(url)
     paths = cache.ensure_dir(video_id)
@@ -122,7 +122,7 @@ def node(state: dict[str, Any]) -> dict[str, Any]:
         existing_meta = cache.read_meta(paths)
         have_video = paths.video.exists() or any(paths.root.glob("video.*"))
         if existing_meta.get("duration_s") is not None and have_video and not state.get("fresh"):
-            logging_.info(f"cache hit — video_id={video_id}")
+            logging_.info(f"cache hit, video_id={video_id}")
             duration = float(existing_meta["duration_s"])
             title = existing_meta.get("title")
             video_path = existing_meta.get("video_path") or str(next(iter(paths.root.glob("video.*"))))

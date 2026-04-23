@@ -24,7 +24,7 @@ class TestSegmentsToWindows(unittest.TestCase):
         self.assertEqual(windows[0][2].count("line"), 30)
 
     def test_long_video_splits_into_15min_windows(self):
-        # 2 hours of content — expect 8 windows of 15 min each
+        # 2 hours of content, expect 8 windows of 15 min each
         segs = _mk_segments(1440, step_s=5.0)  # 7200s
         windows = _segments_to_windows(segs, duration_s=7200.0)
         self.assertEqual(len(windows), 8)

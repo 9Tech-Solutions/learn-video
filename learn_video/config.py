@@ -127,7 +127,7 @@ def resolve_model_id(
     """Apply the 4-step precedence to pick the model id for this call."""
     loaded = loaded or load()
 
-    # 1. --model flag (vision only; targeting stays on Flash Lite — cheap text)
+    # 1. --model flag (vision only; targeting stays on Flash Lite, cheap text)
     if role == "vision" and model_override:
         return model_override
 

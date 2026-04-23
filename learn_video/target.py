@@ -1,8 +1,8 @@
-"""Stage 3 — LLM picks which timestamps need a visual frame.
+"""Stage 3: LLM picks which timestamps need a visual frame.
 
 For videos up to ``_SINGLE_PASS_MAX_S`` we call the LLM once on the whole
 transcript. Longer videos get split into overlapping 15-minute windows and
-targeted per-window — otherwise a 3-hour video would truncate at ~20 min
+targeted per-window; otherwise a 3-hour video would truncate at ~20 min
 (Flash Lite context stays big but the 3–15 target budget doesn't scale).
 """
 
@@ -24,7 +24,7 @@ _SINGLE_PASS_TARGETS_HINT = "3 to 15 for a 20-minute video (scale linearly by le
 
 _SYSTEM_PROMPT = """You are picking visual reference points from a video transcript.
 
-Return a list of timestamps where seeing the screen matters for understanding — code
+Return a list of timestamps where seeing the screen matters for understanding: code
 snippets, diagrams, UI demos, slides. Skip pure narration, talking-heads, b-roll.
 
 Rules:
@@ -191,7 +191,7 @@ def node(state: dict[str, Any]) -> dict[str, Any]:
         windows = _segments_to_windows(segments, duration_s)
         with logging_.stage(
             "TARGETING",
-            f"{model_id} windowed read — {len(windows)} × 15-min passes",
+            f"{model_id} windowed read, {len(windows)} × 15-min passes",
         ):
             for i, (ws, we, wtext) in enumerate(windows, start=1):
                 if not wtext:
@@ -207,7 +207,7 @@ def node(state: dict[str, Any]) -> dict[str, Any]:
                         _build_window_messages(state, ws, we, len(windows), wtext),
                     )
                 except Exception as exc:
-                    # A single bad window shouldn't tank the whole run —
+                    # A single bad window shouldn't tank the whole run;
                     # downstream stages can absorb a lighter target list.
                     logging_.warn(
                         f"targeting window {i}/{len(windows)} failed: {exc}"

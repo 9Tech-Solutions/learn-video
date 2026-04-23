@@ -1,9 +1,9 @@
-"""Stage 5 — vision-powered fusion.
+"""Stage 5: vision-powered fusion.
 
 Two entry points:
 
-- :func:`per_frame_node`  — one LLM call per ``FrameRef`` (default path).
-- :func:`whole_video_node` — one File-API call for short videos (<60s on
+- :func:`per_frame_node`: one LLM call per ``FrameRef`` (default path).
+- :func:`whole_video_node`: one File-API call for short videos (<60s on
   Gemini-capable tiers).
 """
 
@@ -19,7 +19,7 @@ from .errors import ConfigurationError
 from .state import FrameRef, FusedBlock, VisionInput
 
 # Concurrent frame requests. The sliding-window rate limiter in
-# model_client enforces provider RPM caps — this just determines how many
+# model_client enforces provider RPM caps; this just determines how many
 # in-flight requests we're willing to juggle at once.
 _VISION_MAX_CONCURRENCY = 6
 
@@ -27,7 +27,7 @@ _PER_FRAME_PROMPT = """You are fusing one frame of a video with its transcript w
 
 Return a single block in the shape:
 
-VISUAL: <what is on screen — code, UI, diagram, etc. 1-2 sentences>
+VISUAL: <what is on screen: code, UI, diagram, etc. 1-2 sentences>
 FUSED:  <what this frame teaches in context of the narration. 1-3 sentences,
         concrete and reusable as notes.>
 
@@ -71,7 +71,7 @@ def _extract_visual_and_fused(content: str) -> tuple[str | None, str]:
             fused_parts.append(stripped)
     fused = " ".join(p for p in fused_parts if p).strip()
     if not fused:
-        # Unparseable — keep the whole response as FUSED so nothing is silently lost.
+        # Unparseable: keep the whole response as FUSED so nothing is silently lost.
         fused = (content or "").strip()
     return visual, fused
 
@@ -135,7 +135,7 @@ def per_frame_node(state: dict[str, Any]) -> dict[str, Any]:
     blocks.sort(key=lambda b: b.t)
     if failures:
         logging_.warn(
-            f"{failures}/{len(frames)} vision calls failed — continuing with {len(blocks)} blocks"
+            f"{failures}/{len(frames)} vision calls failed, continuing with {len(blocks)} blocks"
         )
 
     cache.update_meta(paths, vision_model_id=model_id)
@@ -143,7 +143,7 @@ def per_frame_node(state: dict[str, Any]) -> dict[str, Any]:
 
 
 def whole_video_node(state: dict[str, Any]) -> dict[str, Any]:
-    """Short-video fast path — single File API upload, single call."""
+    """Short-video fast path: single File API upload, single call."""
     video_id = state["video_id"]
     paths = cache.paths_for(video_id)
     video_path = state.get("video_path")

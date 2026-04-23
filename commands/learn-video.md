@@ -1,5 +1,5 @@
 ---
-description: Extract reusable knowledge from a YouTube/TikTok/Vimeo URL — audio+visual fused timeline, then handoff to /learn-eval
+description: Extract reusable knowledge from a YouTube/TikTok/Vimeo URL via an audio+visual fused timeline, then handoff to /learn-eval
 argument-hint: <url> [--tier=lite|pro|max] [--model=<provider:model>] [--offline] [--fresh] [--short] [--notes-only]
 allowed-tools: Bash, Read
 ---
@@ -51,9 +51,9 @@ Short videos (< 60s, e.g. TikTok/Shorts) auto-route to a one-shot Gemini File AP
 
 ## Cache management
 
-- `python -m learn_video.cli cache-info` — list videos, sizes, last-used.
-- `python -m learn_video.cli cache-clean <video-id>` — remove one.
-- `python -m learn_video.cli cache-clean all` — nuke everything.
+- `python -m learn_video.cli cache-info`: list videos, sizes, last-used.
+- `python -m learn_video.cli cache-clean <video-id>`: remove one.
+- `python -m learn_video.cli cache-clean all`: nuke everything.
 
 Cache dir: `~/.claude/cache/learn-video/<video-id>/` contains `meta.json`, `video.*`, `captions.vtt`, `transcript.json`, `targets.json`, `frames/*.jpg`, `fused.md`.
 

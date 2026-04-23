@@ -1,4 +1,4 @@
-"""Stage 6 — compose the final timeline markdown from FusedBlocks.
+"""Stage 6: compose the final timeline markdown from FusedBlocks.
 
 No LLM here; vision.py did the per-frame fusion. This module orders blocks,
 formats them as ``AUDIO / VISUAL / FUSED`` triads, and writes ``fused.md``.
@@ -36,7 +36,7 @@ def format_markdown(
     lines.append(f"# {title or 'Video Notes'}")
     lines.append("")
     if recommended_form:
-        reason = f" — {recommended_form_reason}" if recommended_form_reason else ""
+        reason = f", {recommended_form_reason}" if recommended_form_reason else ""
         lines.append(f"- **recommended-form:** `{recommended_form}`{reason}")
     if video_kind:
         conf = (
@@ -44,7 +44,7 @@ def format_markdown(
             if isinstance(video_kind_confidence, (int, float))
             else ""
         )
-        reason = f" — {video_kind_reason}" if video_kind_reason else ""
+        reason = f", {video_kind_reason}" if video_kind_reason else ""
         lines.append(f"- **video-kind:** `{video_kind}`{conf}{reason}")
     lines.append(f"- **URL:** {url}")
     lines.append(f"- **Video ID:** `{video_id}`")

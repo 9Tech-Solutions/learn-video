@@ -1,4 +1,4 @@
-"""model_client — the portability seam.
+"""model_client: the portability seam.
 
 ONLY file that imports ``langchain-*`` packages. Stage code uses:
 
@@ -7,7 +7,7 @@ ONLY file that imports ``langchain-*`` packages. Stage code uses:
     out    = invoke_vision(model, VisionInput(text=..., image_b64=...))
 
 If LangChain v2 breaks, if we migrate to LiteLLM, if a 2027 provider shows
-up — only this file changes. Everything else is provider-agnostic.
+up, only this file changes. Everything else is provider-agnostic.
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ T = TypeVar("T", bound=BaseModel)
 # window per model id. Requests that would exceed the cap block until the
 # oldest timestamp in the window expires. This lets us fire N concurrent
 # requests (from vision.per_frame_node parallelization) without tripping
-# Gemini's 429s — earlier versions used fixed 4.5s spacing which forced
+# Gemini's 429s. Earlier versions used fixed 4.5s spacing which forced
 # serial execution even though the free tier allows up to 15 RPM.
 
 # (max_requests, window_seconds). Buffered slightly below provider caps so
@@ -76,7 +76,7 @@ def _throttle(model_id: str) -> None:
 
 
 def _reset_rate_limiter() -> None:
-    """Test-only hook — clears per-model request logs."""
+    """Test-only hook: clears per-model request logs."""
     _REQUEST_LOG.clear()
 
 
@@ -125,7 +125,7 @@ def _with_backoff(fn, *args: Any, **kwargs: Any):
     """Tenacity-style retry without importing tenacity at the call site.
 
     Falls back to a hand-rolled exponential-with-jitter loop when tenacity
-    isn't available — keeps this module importable for unit tests that
+    isn't available; keeps this module importable for unit tests that
     mock the underlying call.
     """
     try:
@@ -193,7 +193,7 @@ def _verify_api_key(model_id: str) -> None:
     required = {
         "google_genai": ("GOOGLE_API_KEY", "GEMINI_API_KEY"),
         "anthropic": ("ANTHROPIC_API_KEY",),
-        # ollama is local — no key
+        # ollama is local, no key
     }.get(provider)
     if not required:
         return
@@ -226,14 +226,14 @@ def invoke_structured(model, schema: type[T], messages) -> T:
     try:
         return _with_backoff(_call_structured)
     except Exception:
-        # Fallback — raw text, repair, validate.
+        # Fallback: raw text, repair, validate.
         def _call_raw():
             return model.invoke(messages)
 
         raw_msg = _with_backoff(_call_raw)
         content = getattr(raw_msg, "content", raw_msg)
         if isinstance(content, list):
-            # Multimodal returns structured content blocks — pull the text.
+            # Multimodal returns structured content blocks; pull the text.
             content = " ".join(
                 part.get("text", "") if isinstance(part, dict) else str(part)
                 for part in content
@@ -326,7 +326,7 @@ def invoke_vision(model, vi: VisionInput, *, model_id: str | None = None):
 def _gemini_upload(path: Path) -> str:
     """Upload a video via the Gemini File API and return the file URI.
 
-    Provider-specific code — isolated to this function. If Gemini changes
+    Provider-specific code, isolated to this function. If Gemini changes
     their upload API this is where we fix it.
     """
     try:
@@ -347,7 +347,7 @@ def _gemini_upload(path: Path) -> str:
     uploaded_name = uploaded.name or ""
     if not uploaded_name:
         raise TransientError("Gemini file upload returned no name")
-    # Poll until ACTIVE — Gemini's video processing is typically 30s–4min
+    # Poll until ACTIVE: Gemini's video processing is typically 30s–4min
     # depending on length and current load. Start at 2s, back off to 5s.
     deadline = time.monotonic() + 300.0
     delay = 2.0
@@ -361,7 +361,7 @@ def _gemini_upload(path: Path) -> str:
             if raw_state is not None and not isinstance(raw_state, str)
             else raw_state
         ) or ""
-        # Some SDK builds stringify enums as "FILESTATE.ACTIVE" — take the
+        # Some SDK builds stringify enums as "FILESTATE.ACTIVE"; take the
         # tail after the last dot so we compare on the plain name.
         last_state = str(state_str).upper().rsplit(".", 1)[-1]
         if last_state == "ACTIVE":
