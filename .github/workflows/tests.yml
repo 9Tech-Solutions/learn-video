@@ -8,6 +8,27 @@ on:
     branches: [main]
 
 jobs:
+  lint:
+    name: lint + typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install dev tooling
+        # Ruff + mypy are stdlib-light; adding pydantic so mypy can resolve
+        # the Pydantic models' types without pulling the whole provider stack.
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff mypy pydantic
+      - name: Ruff
+        run: ruff check .
+      - name: Mypy
+        run: mypy scripts learn_video
+
   test:
     name: ${{ matrix.os }} · Python ${{ matrix.python-version }}
     strategy:

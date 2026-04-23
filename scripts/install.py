@@ -14,6 +14,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import getpass
 import os
 import platform
@@ -139,7 +140,7 @@ class Spinner:
                 sys.stderr.flush()
             self._stop.wait(0.1)
 
-    def __enter__(self) -> "Spinner":
+    def __enter__(self) -> Spinner:
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._thread.start()
         return self
@@ -318,10 +319,8 @@ def write_env_file(path: Path, updates: dict[str, str]) -> None:
             fh.write(content)
         os.replace(tmp_name, path)
     except Exception:
-        try:
+        with contextlib.suppress(OSError):
             os.unlink(tmp_name)
-        except OSError:
-            pass
         raise
 
 
@@ -517,9 +516,7 @@ def step_install(state: InstallerState) -> int:
             if len(tail) > 40:
                 tail = tail[-40:]
             # Pull out meaningful actions for the spinner label.
-            if line.startswith(("Collecting ", "Downloading ", "Building wheel")):
-                spinner.update(line[:76])
-            elif line.startswith("Successfully installed"):
+            if line.startswith(("Collecting ", "Downloading ", "Building wheel")) or line.startswith("Successfully installed"):
                 spinner.update(line[:76])
             if time.monotonic() - start > INSTALL_TIMEOUT_S:
                 proc.kill()

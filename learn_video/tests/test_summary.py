@@ -1,6 +1,5 @@
 import unittest
 
-from learn_video.state import FusedBlock
 from learn_video.summary import Chapter, _format_with_timestamps, _to_fused_blocks
 
 

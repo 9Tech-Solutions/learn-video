@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import sys
 import time
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator
 
 STAGES: tuple[str, ...] = (
     "INGEST",

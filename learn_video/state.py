@@ -6,7 +6,7 @@ module can import from here without pulling LangChain.
 
 from __future__ import annotations
 
-from typing import Literal, Optional, TypedDict
+from typing import Literal, TypedDict
 
 from pydantic import BaseModel, Field
 
@@ -37,7 +37,7 @@ class FrameRef(BaseModel):
 class FusedBlock(BaseModel):
     t: float = Field(ge=0.0)
     audio: str
-    visual: Optional[str] = None
+    visual: str | None = None
     fused: str
 
 
@@ -50,8 +50,8 @@ class VisionInput(BaseModel):
     """
 
     text: str
-    image_b64: Optional[str] = None
-    video_path: Optional[str] = None
+    image_b64: str | None = None
+    video_path: str | None = None
 
 
 class PipelineState(TypedDict, total=False):
@@ -60,24 +60,24 @@ class PipelineState(TypedDict, total=False):
     video_id: str
     tier: Tier
     offline: bool
-    model_override: Optional[str]
+    model_override: str | None
     force_short: bool
     fresh: bool
     notes_only: bool
 
     # --- Populated during run ---
     cache_dir: str
-    title: Optional[str]
-    duration_s: Optional[float]
+    title: str | None
+    duration_s: float | None
     is_short_video: bool
-    video_path: Optional[str]
-    captions_path: Optional[str]
-    transcript: Optional[str]
+    video_path: str | None
+    captions_path: str | None
+    transcript: str | None
     transcript_source: TranscriptSource
     targets: list[Target]
     frames: list[FrameRef]
     fused_blocks: list[FusedBlock]
-    final_md_path: Optional[str]
+    final_md_path: str | None
 
     # --- Classification (set by probe_kind + classify nodes) ---
     video_kind: VideoKind
@@ -90,4 +90,4 @@ class PipelineState(TypedDict, total=False):
     targeting_model_id: str
     vision_model_id: str
     probe_model_id: str
-    error: Optional[str]
+    error: str | None

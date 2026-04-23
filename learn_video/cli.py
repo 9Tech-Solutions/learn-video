@@ -12,7 +12,7 @@ import argparse
 import datetime as _dt
 import sys
 from pathlib import Path
-from typing import Any
+from typing import cast
 
 from . import cache, config, logging_
 from .errors import (
@@ -22,6 +22,7 @@ from .errors import (
     TargetError,
     TransientError,
 )
+from .state import PipelineState
 
 
 def _maybe_load_dotenv() -> None:
@@ -30,7 +31,7 @@ def _maybe_load_dotenv() -> None:
     if not env_path.exists():
         return
     try:
-        from dotenv import load_dotenv  # type: ignore[import-not-found]
+        from dotenv import load_dotenv
     except ImportError:  # pragma: no cover
         return
     load_dotenv(env_path, override=False)
@@ -84,7 +85,8 @@ def _run(args: argparse.Namespace) -> int:
 
     from .pipeline import run as run_pipeline  # lazy import: needs langgraph
 
-    initial: dict[str, Any] = {
+    # PipelineState is a total=False TypedDict; cast makes mypy happy.
+    initial = cast(PipelineState, {
         "url": args.url,
         "tier": tier,
         "offline": bool(args.offline),
@@ -92,7 +94,7 @@ def _run(args: argparse.Namespace) -> int:
         "force_short": bool(args.short),
         "fresh": bool(args.fresh),
         "notes_only": bool(args.notes_only) or loaded.notes_only_default,
-    }
+    })
 
     try:
         final = run_pipeline(initial)
