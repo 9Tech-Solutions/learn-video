@@ -17,7 +17,7 @@ import threading
 import time
 from collections import deque
 from pathlib import Path
-from typing import Any, Type, TypeVar
+from typing import Any, TypeVar
 
 from pydantic import BaseModel
 
@@ -87,25 +87,25 @@ def _retryable_exception_types() -> tuple[type[BaseException], ...]:
     don't crash import."""
     out: list[type[BaseException]] = [TimeoutError, TransientError, ConnectionError]
     try:
-        from google.api_core.exceptions import ResourceExhausted  # type: ignore[import-not-found]
+        from google.api_core.exceptions import ResourceExhausted
 
         out.append(ResourceExhausted)
     except ImportError:  # pragma: no cover
         pass
     try:
-        from google.api_core.exceptions import ServiceUnavailable  # type: ignore[import-not-found]
+        from google.api_core.exceptions import ServiceUnavailable
 
         out.append(ServiceUnavailable)
     except ImportError:  # pragma: no cover
         pass
     try:
-        from anthropic import RateLimitError  # type: ignore[import-not-found]
+        from anthropic import RateLimitError
 
         out.append(RateLimitError)
     except ImportError:  # pragma: no cover
         pass
     try:
-        from anthropic import APIConnectionError  # type: ignore[import-not-found]
+        from anthropic import APIConnectionError
 
         out.append(APIConnectionError)
     except ImportError:  # pragma: no cover
@@ -113,7 +113,7 @@ def _retryable_exception_types() -> tuple[type[BaseException], ...]:
     try:
         # httpx lives under langchain-google-genai's stack; covers
         # ReadError, ConnectError, RemoteProtocolError, PoolTimeout, etc.
-        import httpx  # type: ignore[import-not-found]
+        import httpx
 
         out.extend([httpx.TransportError, httpx.TimeoutException])
     except ImportError:  # pragma: no cover
@@ -129,7 +129,7 @@ def _with_backoff(fn, *args: Any, **kwargs: Any):
     mock the underlying call.
     """
     try:
-        from tenacity import (  # type: ignore[import-not-found]
+        from tenacity import (
             retry,
             retry_if_exception_type,
             stop_after_attempt,
@@ -177,15 +177,15 @@ def build_chat_model(model_id: str, **kwargs: Any):
     """
     _verify_api_key(model_id)
     try:
-        from langchain.chat_models import init_chat_model  # type: ignore[import-not-found]
+        from langchain.chat_models import init_chat_model
     except ImportError as exc:
         raise ConfigurationError(
             "langchain not installed",
             fix_hint="pip install -r ~/.claude/scripts/learn_video/requirements.txt",
         ) from exc
-    params = {"temperature": 0}
-    params.update(kwargs)
-    return init_chat_model(model_id, **params)
+    # Explicit keyword for temperature so mypy can match an overload;
+    # user kwargs override the default naturally via dict-merge in call-time.
+    return init_chat_model(model_id, temperature=0, **kwargs)
 
 
 def _verify_api_key(model_id: str) -> None:
@@ -210,7 +210,7 @@ def _verify_api_key(model_id: str) -> None:
 
 # --- Invocation helpers ------------------------------------------------------
 
-def invoke_structured(model, schema: Type[T], messages) -> T:
+def invoke_structured(model, schema: type[T], messages) -> T:
     """Structured output with a ``json_repair`` fallback.
 
     Some providers (Ollama especially) return not-quite-JSON. We try the
@@ -245,22 +245,24 @@ def invoke_structured(model, schema: Type[T], messages) -> T:
             # default_factory=list). For strict schemas this re-raises with
             # the original Pydantic message intact.
             try:
-                return schema()  # type: ignore[call-arg]
+                return schema()
             except Exception as exc:
                 raise TransientError(
                     f"{schema.__name__}: empty response from model"
                 ) from exc
         try:
-            from json_repair import loads as repair_loads  # type: ignore[import-not-found]
+            from json_repair import loads as repair_loads
         except ImportError:  # pragma: no cover
             import json as _json
 
+            # mypy narrows repair_loads to json_repair.loads's type; stdlib
+            # json.loads is a compatible callable but has a different signature.
             repair_loads = _json.loads  # type: ignore[assignment]
         repaired = repair_loads(stripped)
         if not repaired:
             # json_repair coerces unparseable text to "" or [] → same treatment
             try:
-                return schema()  # type: ignore[call-arg]
+                return schema()
             except Exception as exc:
                 raise TransientError(
                     f"{schema.__name__}: model returned no JSON"
@@ -277,7 +279,7 @@ def invoke_vision(model, vi: VisionInput, *, model_id: str | None = None):
     fires when the provider supports it.
     """
     try:
-        from langchain_core.messages import HumanMessage  # type: ignore[import-not-found]
+        from langchain_core.messages import HumanMessage
     except ImportError as exc:
         raise ConfigurationError(
             "langchain-core not installed",
@@ -287,7 +289,9 @@ def invoke_vision(model, vi: VisionInput, *, model_id: str | None = None):
     mid = model_id or getattr(model, "_lv_model_id", "") or ""
     _throttle(mid)
 
-    content: list[dict[str, Any]] = [{"type": "text", "text": vi.text}]
+    # Annotate as a union list so it matches HumanMessage's covariant parameter
+    # (list is invariant in Python's type system).
+    content: list[str | dict[str, Any]] = [{"type": "text", "text": vi.text}]
     if vi.image_b64:
         content.append(
             {
@@ -325,7 +329,7 @@ def _gemini_upload(path: Path) -> str:
     their upload API this is where we fix it.
     """
     try:
-        from google import genai  # type: ignore[import-not-found]
+        from google import genai
     except ImportError as exc:
         raise ConfigurationError(
             "google-genai SDK not installed (needed for raw-video upload)",
@@ -339,13 +343,16 @@ def _gemini_upload(path: Path) -> str:
         )
     client = genai.Client(api_key=key)
     uploaded = client.files.upload(file=str(path))
+    uploaded_name = uploaded.name or ""
+    if not uploaded_name:
+        raise TransientError("Gemini file upload returned no name")
     # Poll until ACTIVE — Gemini's video processing is typically 30s–4min
     # depending on length and current load. Start at 2s, back off to 5s.
     deadline = time.monotonic() + 300.0
     delay = 2.0
     last_state = ""
     while time.monotonic() < deadline:
-        info = client.files.get(name=uploaded.name)
+        info = client.files.get(name=uploaded_name)
         # state may be an enum, nested object, or plain string across SDK versions.
         raw_state = getattr(info, "state", None)
         state_str = (
@@ -357,20 +364,19 @@ def _gemini_upload(path: Path) -> str:
         # tail after the last dot so we compare on the plain name.
         last_state = str(state_str).upper().rsplit(".", 1)[-1]
         if last_state == "ACTIVE":
-            return info.uri
+            return info.uri or ""
         if last_state == "FAILED":
-            raise TransientError(f"Gemini file processing FAILED: {uploaded.name}")
+            raise TransientError(f"Gemini file processing FAILED: {uploaded_name}")
         time.sleep(delay)
         delay = min(5.0, delay * 1.3)
     raise TransientError(
-        f"Gemini file upload stuck in {last_state or 'UNKNOWN'} after 5min: {uploaded.name}"
+        f"Gemini file upload stuck in {last_state or 'UNKNOWN'} after 5min: {uploaded_name}"
     )
 
 
 def tag_model(model, model_id: str):
     """Stamp a model instance with its id so ``_throttle`` can key on it."""
-    try:
-        setattr(model, "_lv_model_id", model_id)
-    except Exception:  # pragma: no cover - some SDK objects reject setattr
-        pass
+    import contextlib
+    with contextlib.suppress(Exception):  # pragma: no cover - some SDK objects reject setattr
+        model._lv_model_id = model_id
     return model

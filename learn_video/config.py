@@ -10,19 +10,12 @@ Precedence (highest → lowest):
 from __future__ import annotations
 
 import os
-import sys
+
+# Python 3.11+ has tomllib in stdlib; older installs use tomli.
+import tomllib as _toml
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-
-# Python 3.11+ has tomllib in stdlib; older installs use tomli.
-if sys.version_info >= (3, 11):
-    import tomllib as _toml
-else:  # pragma: no cover - legacy path
-    try:
-        import tomli as _toml
-    except ModuleNotFoundError:  # pragma: no cover
-        _toml = None  # type: ignore[assignment]
 
 from .state import Role, Tier
 
@@ -112,7 +105,7 @@ def load() -> LoadedConfig:
     for role in ("targeting", "vision"):
         val = models.get(role)
         if isinstance(val, str) and val:
-            overrides[role] = val  # type: ignore[index]
+            overrides[role] = val
 
     return LoadedConfig(
         tier_default=tier,

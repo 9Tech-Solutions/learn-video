@@ -16,7 +16,19 @@ These are load-bearing. Violating them defeats the portability story that justif
 
 ## Testing bar
 
-- **Every new behavior ships with a unit test.** Current suite: 74+ tests, under `learn_video/tests/`. Run with `python -m unittest discover -s learn_video/tests -t .` from the repo root.
+- **Every new behavior ships with a unit test.** Current suite: 100+ tests, under `learn_video/tests/`. Run with `python -m unittest discover -s learn_video/tests -t .` from the repo root.
+
+### Local quality gates
+
+Before opening a PR, run these three commands. CI runs the same set on every push and PR:
+
+```bash
+ruff check .                                               # lint
+mypy scripts learn_video                                   # typecheck
+python -m unittest discover -s learn_video/tests -t .      # tests
+```
+
+Install the tooling once via the `[dev]` extras: `pip install .[dev]`.
 - **Pure-Python stages** (ingest format selection, cache paths, VTT dedup, target filtering, window splitting, fuse markdown, rate limiter, invoke_structured fallbacks) have full coverage and no network calls.
 - **LLM-touching stages** (probe, target, vision, summary, classify) are tested with mocked `model_client` calls. Don't add tests that hit live APIs — tests must stay hermetic.
 - **No integration tests against live video URLs** in CI. The README's 12-video demo is a manual smoke test run by maintainers.

@@ -1,15 +1,17 @@
 import unittest
 
+from pydantic import ValidationError
+
 from learn_video.state import FrameRef, FusedBlock, Target, TargetList, VisionInput
 
 
 class TestStateSchemas(unittest.TestCase):
     def test_target_rejects_negative_time(self):
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValidationError):
             Target(t=-1.0, why="x")
 
     def test_target_requires_nonempty_why(self):
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValidationError):
             Target(t=5.0, why="")
 
     def test_target_list_roundtrip(self):

@@ -18,7 +18,7 @@ from unittest import mock
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_REPO_ROOT / "scripts"))
 
-import install  # type: ignore[import-not-found]  # noqa: E402
+import install  # noqa: E402
 
 
 class TestDetectPythonOk(unittest.TestCase):
@@ -64,9 +64,11 @@ class TestDetectFfmpeg(unittest.TestCase):
         self.assertFalse(f.blocking)
 
     def test_missing_is_blocking(self):
-        with mock.patch.object(install.shutil, "which", return_value=None):
-            with mock.patch.object(install.platform, "system", return_value="Linux"):
-                f = install.detect_ffmpeg()
+        with (
+            mock.patch.object(install.shutil, "which", return_value=None),
+            mock.patch.object(install.platform, "system", return_value="Linux"),
+        ):
+            f = install.detect_ffmpeg()
         self.assertFalse(f.found)
         self.assertTrue(f.blocking)
         self.assertIn("apt install ffmpeg", f.install_cmd)
@@ -183,9 +185,8 @@ class TestSpinner(unittest.TestCase):
         import contextlib
         import io
         with mock.patch.object(install, "_is_tty", return_value=False), \
-             contextlib.redirect_stderr(io.StringIO()):
-            with install.Spinner("test") as sp:
-                sp.update("doing X")
+             contextlib.redirect_stderr(io.StringIO()), install.Spinner("test") as sp:
+            sp.update("doing X")
         # No exception raised = pass
 
 

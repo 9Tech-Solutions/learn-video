@@ -15,8 +15,7 @@ from typing import Any
 
 from . import classify as classify_stage
 from . import fuse as fuse_stage
-from . import ingest, keyframes, probe, summary, target, transcribe, vision
-from . import logging_
+from . import ingest, keyframes, logging_, probe, summary, target, transcribe, vision
 from .config import SHORT_PATH_TIERS
 from .errors import ConfigurationError
 from .state import PipelineState
@@ -57,7 +56,7 @@ def _kind_router(state: PipelineState) -> str:
 def build_graph():
     """Construct and compile the StateGraph."""
     try:
-        from langgraph.graph import END, START, StateGraph  # type: ignore[import-not-found]
+        from langgraph.graph import END, START, StateGraph
     except ImportError as exc:  # pragma: no cover
         raise ConfigurationError(
             "langgraph not installed",
@@ -110,4 +109,4 @@ def run(initial: PipelineState) -> PipelineState:
         f"running pipeline tier={initial.get('tier', 'lite')} "
         f"offline={bool(initial.get('offline'))} url={initial.get('url')}"
     )
-    return graph.invoke(initial)  # type: ignore[return-value]
+    return graph.invoke(initial)

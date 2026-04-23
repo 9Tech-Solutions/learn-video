@@ -1,7 +1,7 @@
 import unittest
 
-from learn_video.probe import _PROBE_FRACTIONS, _probe_frame_paths
 from learn_video import cache
+from learn_video.probe import _PROBE_FRACTIONS, _probe_frame_paths
 
 
 class TestProbeFramePaths(unittest.TestCase):
@@ -20,7 +20,7 @@ class TestProbeFramePaths(unittest.TestCase):
         result = _probe_frame_paths(paths, duration_s=600.0)
         try:
             self.assertEqual(len(result), len(_PROBE_FRACTIONS))
-            for (t, p), frac in zip(result, _PROBE_FRACTIONS):
+            for (t, p), frac in zip(result, _PROBE_FRACTIONS, strict=False):
                 self.assertAlmostEqual(t, 600.0 * frac, places=1)
                 self.assertTrue(str(p).endswith(".jpg"))
                 self.assertIn("probe", str(p))

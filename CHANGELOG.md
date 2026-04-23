@@ -2,6 +2,27 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+
+- **Ruff + mypy** wired in as the project's static-analysis tools. Configured in `pyproject.toml` with a moderate rule set (`E`, `F`, `W`, `I`, `B`, `UP`, `SIM`) at line length 100.
+- **CI lint job** — new `lint + typecheck` job in `.github/workflows/tests.yml`, runs on every push / PR before the 6-cell test matrix.
+- `ruff` and `mypy` added to the `[dev]` extras group.
+
+### Changed
+
+- Replaced `setattr(model, "_lv_model_id", ...)` with direct attribute assignment (ruff `B010`).
+- Collapsed a nested `if` in `transcribe._strip_overlap` into a single condition (ruff `SIM102`).
+- Replaced a `try/except/pass` with `contextlib.suppress(Exception)` in `model_client.tag_model` (ruff `SIM105`).
+- Replaced `typing.Type` with built-in `type` in `invoke_structured` (ruff `UP006`).
+- Removed 14 redundant `# type: ignore[import-not-found]` pragmas — provider imports are now covered by `[[tool.mypy.overrides]]` with `ignore_missing_imports = true`.
+- Tightened test assertions from bare `assertRaises(Exception)` to `assertRaises(ValidationError)` (ruff `B017`).
+- Narrowed `init_chat_model` call to use an explicit `temperature=0` keyword so mypy can match an overload.
+- `VisionInput` content lists annotated as `list[str | dict[str, Any]]` so they satisfy LangChain's covariant `HumanMessage` content parameter.
+- Gemini File API code handles `uploaded.name` and `info.uri` Optional-ness explicitly.
+- `cli._run` casts the input dict to `PipelineState` (TypedDict) for mypy.
+
 ## [0.2.0] — 2026-04-23
 
 Installer rewrite for cross-platform UX. No runtime pipeline changes.

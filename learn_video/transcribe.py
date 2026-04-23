@@ -40,10 +40,11 @@ def _strip_overlap(prev_tail: str, curr: str) -> str:
         return curr
     max_k = min(len(prev_tail), len(curr))
     for k in range(max_k, 0, -1):
-        if prev_tail[-k:] == curr[:k]:
-            # Don't snap mid-word: require the cut point to sit on a word edge
-            if k == len(curr) or curr[k:k + 1].isspace() or curr[k - 1:k].isspace():
-                return curr[k:].lstrip()
+        # Match suffix-of-prev with prefix-of-curr, only snapping on word edges.
+        if prev_tail[-k:] == curr[:k] and (
+            k == len(curr) or curr[k:k + 1].isspace() or curr[k - 1:k].isspace()
+        ):
+            return curr[k:].lstrip()
     return curr
 
 
@@ -104,7 +105,7 @@ def _parse_vtt(vtt_path: Path) -> tuple[str, list[dict[str, Any]]]:
 
 def _whisper_transcribe(video_path: Path) -> tuple[str, list[dict[str, Any]]]:
     try:
-        from faster_whisper import WhisperModel  # type: ignore[import-not-found]
+        from faster_whisper import WhisperModel
     except ImportError as exc:
         raise EnvironmentError_(
             "faster-whisper not installed",

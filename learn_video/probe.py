@@ -103,11 +103,11 @@ def node(state: dict[str, Any]) -> dict[str, Any]:
     )
 
     try:
-        from langchain_core.messages import HumanMessage  # type: ignore[import-not-found]
+        from langchain_core.messages import HumanMessage
     except ImportError as exc:
         raise TransientError("langchain-core not installed") from exc
 
-    content: list[dict[str, Any]] = [
+    content: list[str | dict[str, Any]] = [
         {"type": "text", "text": _PROMPT.format(n=len(frame_paths))},
     ]
     for t, p in frame_paths:

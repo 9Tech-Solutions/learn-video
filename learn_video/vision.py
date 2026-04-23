@@ -118,21 +118,20 @@ def per_frame_node(state: dict[str, Any]) -> dict[str, Any]:
     with logging_.stage(
         "VISION",
         f"{model_id} fusing {len(frames)} frames ({workers}-way concurrent, rate-limited)",
-    ):
-        with ThreadPoolExecutor(max_workers=workers) as pool:
-            futures = {pool.submit(_fuse_one, ref): ref for ref in frames}
-            for fut in as_completed(futures):
-                ref = futures[fut]
-                try:
-                    result = fut.result()
-                except Exception as exc:
-                    failures += 1
-                    logging_.warn(
-                        f"vision t={ref.t:.1f}s failed after retries: {exc}"
-                    )
-                    continue
-                if result is not None:
-                    blocks.append(result)
+    ), ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = {pool.submit(_fuse_one, ref): ref for ref in frames}
+        for fut in as_completed(futures):
+            ref = futures[fut]
+            try:
+                result = fut.result()
+            except Exception as exc:
+                failures += 1
+                logging_.warn(
+                    f"vision t={ref.t:.1f}s failed after retries: {exc}"
+                )
+                continue
+            if result is not None:
+                blocks.append(result)
     blocks.sort(key=lambda b: b.t)
     if failures:
         logging_.warn(
