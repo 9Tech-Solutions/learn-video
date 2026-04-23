@@ -5,35 +5,24 @@
 [![python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 [![skills.sh](https://img.shields.io/badge/skills.sh-9Tech--Solutions%2Flearn--video-black)](https://skills.sh/9Tech-Solutions/learn-video/learn-video)
 
-> Extract reusable knowledge from video platforms. Not transcripts — **fused audio + visual notes** aligned to the moment a concept is taught.
-
-`learn-video` is a Claude Code skill that runs a 6-stage pipeline over a YouTube, TikTok, or any `yt-dlp`-supported URL and produces a `fused.md` timeline designed to hand off to `/learn-eval`. It reads the transcript to pick which timestamps need a frame, extracts just those keyframes with `ffmpeg`, and asks a vision model to fuse each frame with its transcript window. The output is organised as `AUDIO / VISUAL / FUSED` blocks — the `FUSED:` line on each block is a single-sentence reusable note.
-
-It is **model-portable by design**. The only module that imports `langchain-*` is `model_client.py`. A LangChain v2 break, a migration to LiteLLM, or a 2027 model release touches that one file. Stage code stays unchanged.
+> Read a video the way a careful viewer would — narration paired with what's on screen at the moment an idea is taught.
 
 ## Why this exists
 
-A survey of [skills.sh](https://skills.sh/) and five adjacent registries (April 2026) returned ~10 YouTube-related skills and zero that do audio-visual fused knowledge extraction. The ecosystem treats video as "transcript with metadata." `learn-video` occupies the empty slot.
+A transcript tells you what someone said. But creators don't film themselves for fun — every time a person picks video over an article, they're choosing to show you something words alone can't carry. The diagram they point at. The line of code they highlight. The UI they click through. The terminal output they leave hanging on screen while they explain it. When a tool reduces a video to its transcript, it keeps the words and throws away **the reason the video existed in the first place**.
 
-| Capability | Transcript skills | YouTube-clipper | **learn-video** |
-|---|:---:|:---:|:---:|
-| YouTube transcript | ✅ | ✅ | ✅ |
-| Multi-platform (TikTok, Vimeo, 1800+ sites) | ❌ | ❌ | ✅ |
-| Whisper fallback when captions missing | ❌ | ❌ | ✅ |
-| VTT scroll-caption dedup | ❌ | ❌ | ✅ |
-| LLM-guided keyframe targeting | ❌ | ❌ | ✅ |
-| Vision model on frames | ❌ | ❌ | ✅ |
-| Audio + visual FUSED blocks | ❌ | ❌ | ✅ |
-| Video-kind probe (visual / audio / mixed) | ❌ | ❌ | ✅ |
-| Short-video fast path (Gemini File API) | ❌ | ❌ | ✅ |
-| Sliding-window targeting for 1–3h videos | ❌ | ❌ | ✅ |
-| Model portability seam (LangChain/LangGraph adapter) | ❌ | ❌ | ✅ |
-| Tiered quality + offline Ollama path | ❌ | ❌ | ✅ |
-| `recommended-form` classification | ❌ | ❌ | ✅ |
-| Per-provider sliding-window rate limiter | ❌ | ❌ | ✅ |
-| Concurrent vision with RPM enforcement | ❌ | ❌ | ✅ |
+This matters more than it sounds. A tutorial narrator says _"just add this and that here"_ while their cursor hovers over `--experimental-modules`. A system-design talk says _"and the cache looks like this"_ while a diagram shows three very specific layers. A short-form clip says _"avoid this pattern"_ while the screen shows the exact 4-line anti-pattern. The transcript saves the narration. The video saves the answer. A transcript-only tool leaves you with half the lesson.
 
-## Example output
+`learn-video` reads both. An LLM scans the transcript and picks the handful of moments where **the screen actually matters** — typically 3 to 15 for a 20-minute video. `ffmpeg` pulls just those frames. A vision model pairs each frame with the narration around it. The output is a timeline of self-contained notes — one per teaching moment — that read like what a careful viewer would have written down. Not a wall of text. Not a summary. Notes.
+
+## Who it's for
+
+- **Developers** harvesting knowledge from tutorials, talks, TikTok clips, and conference recordings into a skill library (`/learn-eval` routes the output into skills, rules, tips, or notes automatically).
+- **Learners** who want a searchable reference of "what was shown at 14:23 when they said _this part is important_."
+- **Content curators** pulling the one reusable idea from a long video without re-watching it.
+- **Anyone** who has ever paused a tutorial, screenshotted the screen, and typed the caption into a note app by hand.
+
+## What the output looks like
 
 A 1m 7s TikTok on clean-code principles (`@s4.codes/video/7617132278875016470`) produces:
 
@@ -66,6 +55,16 @@ tells the reader "new section" faster than any formatting rule could.
 A 2h 39min conference talk (`W4EwfEU8CGA`, _Let's Handle 1M Requests/sec_) produces 25 blocks via a 10-window sliding targeting pass. A 1-minute YouTube Short goes through the whole-video File API upload path and produces a single compact fused block.
 
 ## Quickstart
+
+**If you just want it as a Claude Code skill** (or Codex, Cursor, Windsurf — any agent that reads SKILL.md):
+
+```bash
+npx skills add 9Tech-Solutions/learn-video
+```
+
+The `skills` CLI clones the repo and symlinks the skill into every agent install it finds on your machine. You still need `ffmpeg`, `yt-dlp`, and a `GEMINI_API_KEY` before the pipeline can actually run — see below.
+
+**If you want to run the CLI directly, modify the code, or use it without Claude Code:** follow the four steps below.
 
 ### 1. Clone and install
 
@@ -111,7 +110,39 @@ cp -r learn_video ~/.claude/scripts/
 
 After that, `/learn-video <url>` inside Claude Code drives the pipeline and hands off to `/learn-eval`.
 
+## How it compares to other video skills
+
+A survey of [skills.sh](https://skills.sh/) and five adjacent registries (April 2026) returned ~10 YouTube-related skills and zero that do audio-visual fused knowledge extraction. Most are transcript fetchers. One (`youtube-clipper`) downloads and cuts video but never reads the frames. `learn-video` is the only one that pairs narration with on-screen content.
+
+| Capability | Transcript skills | YouTube-clipper | **learn-video** |
+|---|:---:|:---:|:---:|
+| YouTube transcript | ✅ | ✅ | ✅ |
+| Multi-platform (TikTok, Vimeo, 1800+ sites) | ❌ | ❌ | ✅ |
+| Whisper fallback when captions are missing | ❌ | ❌ | ✅ |
+| Cleans up YouTube's duplicated scroll-captions | ❌ | ❌ | ✅ |
+| LLM picks which moments need a frame | ❌ | ❌ | ✅ |
+| Vision model actually reads the frame | ❌ | ❌ | ✅ |
+| Output pairs narration with what's on screen | ❌ | ❌ | ✅ |
+| Detects podcasts / talking-head (skips vision cost) | ❌ | ❌ | ✅ |
+| Short-video fast path (whole-video upload) | ❌ | ❌ | ✅ |
+| Handles 1–3 hour videos via sliding windows | ❌ | ❌ | ✅ |
+| Swap models without code changes (Gemini / Claude / local) | ❌ | ❌ | ✅ |
+| Classifies output for knowledge-system routing | ❌ | ❌ | ✅ |
+
 ## How it works
+
+Six stages, in plain language:
+
+1. **Ingest** — download the video and its captions if any (uses `yt-dlp`, which supports 1800+ sites).
+2. **Transcribe** — if the platform doesn't have captions, run a local whisper model on the audio.
+3. **Probe** — sample 5 frames across the video and ask the LLM: _is this a tutorial with stuff on screen, or is it a podcast / talking head where the visuals don't really matter?_ If it's the latter, skip the expensive visual path and just summarize the transcript into chapters.
+4. **Target** — read the transcript, pick the handful of timestamps where what's on screen actually carries the idea. For videos over 25 minutes, split the transcript into 15-minute windows and pick per window so long talks don't get shortchanged.
+5. **Vision** — pull a frame at each target with `ffmpeg`, ask a vision model what's on screen, and fuse it with the surrounding narration. Up to 6 frames are processed in parallel.
+6. **Fuse** — compose the final markdown. Before that, one more quick LLM call decides whether the result is a reusable skill, a rule, a tip, a note, or low-signal.
+
+Videos under 60 seconds (TikToks, YouTube Shorts) take a **fast path**: the whole video is uploaded once to Gemini's File API and summarized in a single call.
+
+The flow as a diagram:
 
 ```
 START → ingest → transcribe → probe_short
@@ -121,7 +152,9 @@ START → ingest → transcribe → probe_short
         └── target → keyframes → vision ──► classify → fuse → END    (visual)
 ```
 
-Three-layer architecture:
+### Three-layer architecture (for the curious)
+
+The pipeline is split into three layers so that when a better model ships in 2027, or LangChain publishes a breaking v2, only the middle layer changes. Stage code never imports a provider SDK directly — it calls into `model_client.py`, which is the only place in the codebase that knows about Gemini, Claude, or Ollama.
 
 ```
 ┌──────────────────────────────────────────────────────┐
