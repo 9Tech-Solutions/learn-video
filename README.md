@@ -1,5 +1,10 @@
 # learn-video
 
+[![tests](https://github.com/9Tech-Solutions/learn-video/actions/workflows/tests.yml/badge.svg)](https://github.com/9Tech-Solutions/learn-video/actions/workflows/tests.yml)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
+[![skills.sh](https://img.shields.io/badge/skills.sh-9Tech--Solutions%2Flearn--video-black)](https://skills.sh/9Tech-Solutions/learn-video/learn-video)
+
 > Extract reusable knowledge from video platforms. Not transcripts — **fused audio + visual notes** aligned to the moment a concept is taught.
 
 `learn-video` is a Claude Code skill that runs a 6-stage pipeline over a YouTube, TikTok, or any `yt-dlp`-supported URL and produces a `fused.md` timeline designed to hand off to `/learn-eval`. It reads the transcript to pick which timestamps need a frame, extracts just those keyframes with `ffmpeg`, and asks a vision model to fuse each frame with its transcript window. The output is organised as `AUDIO / VISUAL / FUSED` blocks — the `FUSED:` line on each block is a single-sentence reusable note.
