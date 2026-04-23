@@ -56,41 +56,38 @@ A 2h 39min conference talk (`W4EwfEU8CGA`, _Let's Handle 1M Requests/sec_) produ
 
 ## Quickstart
 
-**If you just want it as a Claude Code skill** (or Codex, Cursor, Windsurf — any agent that reads SKILL.md):
+**As a Claude Code / Codex / Cursor / Windsurf skill** (one command, works everywhere):
 
 ```bash
 npx skills add 9Tech-Solutions/learn-video
 ```
 
-The `skills` CLI clones the repo and symlinks the skill into every agent install it finds on your machine. You still need `ffmpeg`, `yt-dlp`, and a `GEMINI_API_KEY` before the pipeline can actually run — see below.
+The `skills` CLI clones the repo and symlinks the skill into every agent install on your machine. You still need `ffmpeg`, `yt-dlp`, and a `GEMINI_API_KEY` before the pipeline can actually run — the installer below handles the rest.
 
-**If you want to run the CLI directly, modify the code, or use it without Claude Code:** follow the four steps below.
-
-### 1. Clone and install
+**As a local CLI or for development** — clone and run the interactive installer:
 
 ```bash
 git clone https://github.com/9Tech-Solutions/learn-video
 cd learn-video
-./setup.sh
+./setup.sh                  # macOS / Linux / git-bash
+.\setup.ps1                 # Windows PowerShell
+# or, directly (any OS):    python scripts/install.py
 ```
 
-The setup script creates a virtualenv, installs pinned requirements (`langgraph`, `langchain-*`, `yt-dlp`, `faster-whisper`, `pydantic`, `tenacity`, `json-repair`), and prints the next steps. Requires Python 3.13 (3.11+ should work) and `ffmpeg` on PATH.
+The installer walks you through six steps in about two minutes:
 
-### 2. Provide API keys
-
-```bash
-cp .env.example .env
-# edit .env: GEMINI_API_KEY=...  (required)
-#           ANTHROPIC_API_KEY=... (only for --tier=max)
+```
+[1/6] Checking prerequisites      ✓ Python / ✓ or ✗ ffmpeg / ✗ yt-dlp (→ step 4)
+[2/6] Virtualenv                  Create .venv? [Y/n]
+[3/6] Feature pack                1) lite (Gemini only, ~200 MB, default)
+                                  2) full (+ Anthropic + Ollama, ~350 MB)
+                                  3) dev  (full + pytest for contributors)
+[4/6] Installing packages         (live spinner with current package)
+[5/6] API keys                    Paste GEMINI_API_KEY (hidden). Writes .env.
+[6/6] Smoke test                  Import check + test discovery
 ```
 
-Or export them directly:
-
-```bash
-export GEMINI_API_KEY=...
-```
-
-### 3. Run
+When it's done you can run:
 
 ```bash
 python -m learn_video.cli run "https://www.youtube.com/watch?v=<id>"
@@ -98,17 +95,38 @@ python -m learn_video.cli run "https://www.youtube.com/watch?v=<id>"
 
 You'll see `[N/6 STAGE]` lines on stderr and the final `fused.md` path on stdout. Everything is cached under `~/.claude/cache/learn-video/<video-id>/` so reruns are free.
 
-### 4. Install as a Claude Code skill (optional)
+### Non-interactive install (CI / Docker / scripts)
 
-Copy the slash command and the package into your Claude config:
+All prompts have a flag equivalent, so the installer runs silently under automation:
 
 ```bash
-mkdir -p ~/.claude/commands ~/.claude/scripts
-cp commands/learn-video.md ~/.claude/commands/
-cp -r learn_video ~/.claude/scripts/
+python scripts/install.py \
+  --yes \
+  --pack=lite \
+  --gemini-key="$GEMINI_API_KEY" \
+  --skip-smoke-test
 ```
 
-After that, `/learn-video <url>` inside Claude Code drives the pipeline and hands off to `/learn-eval`.
+Useful flags: `--no-venv` (install into the current Python), `--venv-path=<dir>`, `--anthropic-key`, `--quiet`. Exit codes follow the main CLI: 0 ok, 2 config error, 3 environment error.
+
+### Manual install (for contributors who'd rather DIY)
+
+If you prefer to skip the installer:
+
+```bash
+python -m venv .venv && source .venv/bin/activate      # or .\.venv\Scripts\Activate.ps1
+pip install .[lite]                                    # or .[full] / .[dev]
+cp .env.example .env && $EDITOR .env                   # set GEMINI_API_KEY
+```
+
+### PowerShell execution policy
+
+On first run, Windows may block `.\setup.ps1` with "script is not digitally signed." Allow it for the current shell only:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\setup.ps1
+```
 
 ## How it compares to other video skills
 

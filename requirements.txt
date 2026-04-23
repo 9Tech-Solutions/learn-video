@@ -1,3 +1,7 @@
+# Top-level install — equivalent to `pip install .[full]`.
+# Prefer `pip install .[lite]` (Gemini only), `.[full]` (all providers),
+# or `.[dev]` (contributors). See pyproject.toml for the canonical groups.
+# Or just run: python scripts/install.py
 yt-dlp>=2026.1.0
 faster-whisper>=1.2.0
 langgraph>=1.1.0,<2.0
