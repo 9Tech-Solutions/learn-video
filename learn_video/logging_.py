@@ -1,4 +1,4 @@
-"""Progress reporting — `[N/6 STAGE]` lines on stderr.
+"""Progress reporting: `[N/6 STAGE]` lines on stderr.
 
 Stdout is reserved for the final fused.md path so the slash command can
 capture just the artifact.

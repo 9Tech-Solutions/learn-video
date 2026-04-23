@@ -72,7 +72,7 @@ Precedence (highest to lowest):
 3. `[models]` table in `config.toml`
 4. `TIER_MODELS` default for the selected `--tier`
 
-Targeting always stays on Flash Lite regardless of CLI / env overrides — those only reroute vision. Rationale: targeting is a cheap text task; burning a premium quota on it is almost always wrong.
+Targeting always stays on Flash Lite regardless of CLI / env overrides; those only reroute vision. Rationale: targeting is a cheap text task; burning a premium quota on it is almost always wrong.
 
 ## Python API
 
@@ -94,15 +94,15 @@ print(final_state["recommended_form"])
 print(final_state["video_kind"])
 ```
 
-`final_state` is a `PipelineState` TypedDict — see `state.py` for the full schema.
+`final_state` is a `PipelineState` TypedDict; see `state.py` for the full schema.
 
 ## fused.md format
 
 ```markdown
 # <video title>
 
-- **recommended-form:** `<skill|rule|tip|note|discard>` — <one-line reason>
-- **video-kind:** `<visual|audio|mixed>` (confidence <0-1>) — <one-line reason>
+- **recommended-form:** `<skill|rule|tip|note|discard>`, <one-line reason>
+- **video-kind:** `<visual|audio|mixed>` (confidence <0-1>), <one-line reason>
 - **URL:** <url>
 - **Video ID:** `<id>`
 - **Targeting model:** `<provider:model>`
@@ -114,7 +114,7 @@ print(final_state["video_kind"])
 
 **AUDIO:** <transcript window around this timestamp>
 
-**VISUAL:** <what's on screen — code, diagram, UI, slide>
+**VISUAL:** <what's on screen: code, diagram, UI, slide>
 
 **FUSED:** <single-sentence reusable note>
 
@@ -122,4 +122,4 @@ print(final_state["video_kind"])
 ...
 ```
 
-Parsers downstream (e.g. `/learn-eval`) should key off `recommended-form:` and `video-kind:` lines — they are always present and appear before the `## Timeline` header.
+Parsers downstream (e.g. `/learn-eval`) should key off `recommended-form:` and `video-kind:` lines; they are always present and appear before the `## Timeline` header.

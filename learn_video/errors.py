@@ -8,7 +8,7 @@ from __future__ import annotations
 
 
 class LearnVideoError(Exception):
-    """Base. Don't raise directly — pick a subclass."""
+    """Base. Don't raise directly; pick a subclass."""
 
 
 class TransientError(LearnVideoError):
@@ -35,4 +35,4 @@ class EnvironmentError_(LearnVideoError):
 
 
 class TargetError(LearnVideoError):
-    """Unrecoverable — don't retry. Examples: DRM block, deleted video."""
+    """Unrecoverable; don't retry. Examples: DRM block, deleted video."""

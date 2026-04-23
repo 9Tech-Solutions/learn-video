@@ -2,7 +2,7 @@
 
 Each stage checks for its output before running, which also gives us free
 retry idempotency (see plan §9). LangGraph's SQLite checkpointer is *not*
-used as primary cache — artifacts ARE the checkpoints.
+used as primary cache; artifacts ARE the checkpoints.
 """
 
 from __future__ import annotations

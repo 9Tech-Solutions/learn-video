@@ -1,4 +1,4 @@
-"""Post-fusion classification — suggests a downstream form for /learn-eval.
+"""Post-fusion classification: suggests a downstream form for /learn-eval.
 
 One cheap Flash Lite call after the content is fused. Tells /learn-eval
 whether this looks like a reusable ``skill``, a guardrail ``rule``, a
@@ -25,17 +25,17 @@ class FormClassification(BaseModel):
 _SYSTEM_PROMPT = """You are classifying video notes to route them in a knowledge system.
 
 Output one of:
-- "skill"   — teaches a reusable technique or pattern with enough structure
-              to turn into a SKILL.md (how/when/examples). E.g. a coding
-              tutorial with a specific workflow.
-- "rule"    — a guardrail, convention, or do/don't worth enforcing project-wide.
-              E.g. "always use parameterized queries," "never mutate props."
-- "tip"     — one small trick or shortcut, not enough to stand as a skill.
-              E.g. a single terminal keybind, a lesser-known CLI flag.
-- "note"    — context worth remembering but not a reusable rule — industry
-              news, market commentary, a product demo, a personal anecdote.
-- "discard" — no reusable signal. Pure entertainment, broken content,
-              filler with no teaching.
+- "skill":   teaches a reusable technique or pattern with enough structure
+             to turn into a SKILL.md (how/when/examples). E.g. a coding
+             tutorial with a specific workflow.
+- "rule":    a guardrail, convention, or do/don't worth enforcing project-wide.
+             E.g. "always use parameterized queries," "never mutate props."
+- "tip":     one small trick or shortcut, not enough to stand as a skill.
+             E.g. a single terminal keybind, a lesser-known CLI flag.
+- "note":    context worth remembering but not a reusable rule. Industry
+             news, market commentary, a product demo, a personal anecdote.
+- "discard": no reusable signal. Pure entertainment, broken content,
+             filler with no teaching.
 
 Pick the one that fits best. Return a one-sentence reason.
 """
@@ -98,7 +98,7 @@ def node(state: dict[str, Any]) -> dict[str, Any]:
         )
 
     form: RecommendedForm = classification.form
-    logging_.emit("CLASSIFY", f"→ {form} — {classification.reason}")
+    logging_.emit("CLASSIFY", f"→ {form}: {classification.reason}")
 
     cache.update_meta(
         paths,

@@ -1,6 +1,6 @@
 """Tests for scripts/install.py helpers.
 
-Covers the pure, testable surface — detection, path resolution, pack
+Covers the pure, testable surface: detection, path resolution, pack
 parsing, and env-file writing. Interactive flows and subprocess calls
 are not exercised here (manual smoke test covers those).
 """
@@ -164,7 +164,7 @@ class TestWriteEnvFile(unittest.TestCase):
         self.assertEqual(leftovers, [], "atomic write must leave no .tmp files behind")
 
     def test_rejects_newline_in_value(self):
-        """Values with \\n would corrupt the .env line format — defensive reject."""
+        """Values with \\n would corrupt the .env line format; defensive reject."""
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / ".env"
             with self.assertRaises(ValueError):
@@ -181,7 +181,7 @@ class TestWriteEnvFile(unittest.TestCase):
 
 class TestSpinner(unittest.TestCase):
     def test_spinner_starts_and_stops_without_tty(self):
-        """When stdout isn't a tty, spinner still works — just falls back."""
+        """When stdout isn't a tty, spinner still works, just falls back."""
         import contextlib
         import io
         with mock.patch.object(install, "_is_tty", return_value=False), \

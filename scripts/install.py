@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """learn-video interactive installer.
 
-Works on Windows, macOS, and Linux. Stdlib only — no deps before the deps
+Works on Windows, macOS, and Linux. Stdlib only, no deps before the deps
 are installed. Shims ``setup.sh`` and ``setup.ps1`` delegate here.
 
 Usage:
@@ -39,11 +39,11 @@ EXIT_FAIL = 5
 PACK_CHOICES = ("lite", "full", "dev")
 MIN_PYTHON = (3, 11)
 
-# Spinner frames — Unicode first, ASCII fallback for dumb terminals.
+# Spinner frames: Unicode first, ASCII fallback for dumb terminals.
 SPINNER_UTF8 = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
 SPINNER_ASCII = "|/-\\"
 
-# Box drawing — Unicode first, ASCII fallback.
+# Box drawing: Unicode first, ASCII fallback.
 BOX_UTF8 = {"tl": "┌", "tr": "┐", "bl": "└", "br": "┘", "h": "─", "v": "│"}
 BOX_ASCII = {"tl": "+", "tr": "+", "bl": "+", "br": "+", "h": "-", "v": "|"}
 
@@ -73,7 +73,7 @@ def _arrow() -> str: return ARROW_UTF8 if _is_utf8() else ARROW_ASCII
 
 
 # ---------------------------------------------------------------------------
-# Minimal printing — stderr only, mirrors learn_video/logging_.py style
+# Minimal printing: stderr only, mirrors learn_video/logging_.py style
 # ---------------------------------------------------------------------------
 
 _STEP_COUNT = 6
@@ -156,7 +156,7 @@ class Spinner:
 
 
 # ---------------------------------------------------------------------------
-# Prereq detection — testable helpers
+# Prereq detection: testable helpers
 # ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
@@ -214,7 +214,7 @@ def detect_ytdlp() -> Finding:
     return Finding(
         name="yt-dlp",
         found=False,
-        detail="not on PATH — will install via pip in step 4",
+        detail="not on PATH, will install via pip in step 4",
         install_cmd="",
         blocking=False,
     )
@@ -224,7 +224,7 @@ def format_finding_row(f: Finding) -> str:
     mark = _check() if f.found else _cross()
     line = f"{mark} {f.name}"
     if f.detail:
-        line += f" — {f.detail}"
+        line += f" - {f.detail}"
     return line
 
 
@@ -346,7 +346,7 @@ def step_prereq(state: InstallerState) -> int:
 
     if not detect_python_ok():
         return _fatal(
-            f"Python {sys.version_info.major}.{sys.version_info.minor} is too old — "
+            f"Python {sys.version_info.major}.{sys.version_info.minor} is too old, "
             f"need {MIN_PYTHON[0]}.{MIN_PYTHON[1]}+",
             hint=install_hint_for_os("python") or "Install a newer Python.",
             code=EXIT_ENV,
@@ -368,7 +368,7 @@ def step_prereq(state: InstallerState) -> int:
 
     if blocking_missing > 0:
         if state.non_interactive:
-            _warn(f"{blocking_missing} required tool(s) missing — continuing anyway "
+            _warn(f"{blocking_missing} required tool(s) missing, continuing anyway "
                   "because --yes was set. Install them before running learn-video.")
         else:
             print("", file=sys.stderr)
@@ -431,7 +431,7 @@ def step_venv(state: InstallerState) -> int:
     if not state.venv_python.exists():
         return _fatal(
             f"venv python not found at {state.venv_python}",
-            hint="the venv may be corrupt — delete and retry",
+            hint="the venv may be corrupt; delete and retry",
             code=EXIT_FAIL,
         )
     _ok(f"venv python: {state.venv_python}")
@@ -483,7 +483,7 @@ def step_install(state: InstallerState) -> int:
             pip_upgrade_cmd, capture_output=True, text=True, timeout=120,
         )
     if upgrade_proc.returncode != 0:
-        _warn(f"pip upgrade exited {upgrade_proc.returncode} — continuing with existing pip. "
+        _warn(f"pip upgrade exited {upgrade_proc.returncode}, continuing with existing pip. "
               "If the main install fails, upgrade pip manually and retry.")
 
     extras_spec = f".[{state.pack}]"
@@ -521,7 +521,7 @@ def step_install(state: InstallerState) -> int:
             if time.monotonic() - start > INSTALL_TIMEOUT_S:
                 proc.kill()
                 return _fatal(
-                    f"pip install exceeded {INSTALL_TIMEOUT_S}s — aborting.",
+                    f"pip install exceeded {INSTALL_TIMEOUT_S}s; aborting.",
                     hint="check network connectivity and retry",
                     code=EXIT_FAIL,
                 )
@@ -568,8 +568,8 @@ def _prompt_hidden(label: str) -> str:
     except OSError:
         # getpass raises OSError when there's no tty to read from.
         # GetPassWarning is emitted via warnings.warn (not raised), so we
-        # don't catch it here — getpass already falls back internally.
-        _warn("terminal doesn't support hidden input — key will be visible while typing")
+        # don't catch it here; getpass already falls back internally.
+        _warn("terminal doesn't support hidden input, key will be visible while typing")
         try:
             return input(f"  {label}: ")
         except EOFError:
@@ -585,14 +585,14 @@ def step_keys(state: InstallerState) -> int:
     # GEMINI_API_KEY (required)
     gemini_key = state.args.gemini_key
     if not gemini_key and state.non_interactive:
-        _warn("no --gemini-key provided and non-interactive — skipping .env write; "
+        _warn("no --gemini-key provided and non-interactive, skipping .env write; "
               "you must set GEMINI_API_KEY before running learn-video")
     elif not gemini_key:
         print("  Get one at https://aistudio.google.com/apikey", file=sys.stderr)
         gemini_key = _prompt_hidden("Paste your GEMINI_API_KEY (input hidden)").strip()
         if gemini_key and not _GEMINI_KEY_PATTERN.match(gemini_key):
             _warn("key doesn't look like a Gemini key (expected prefix 'AIza…'); "
-                  "saving anyway — learn-video will surface a real error if it's wrong")
+                  "saving anyway; learn-video will surface a real error if it's wrong")
 
     if gemini_key:
         updates["GEMINI_API_KEY"] = gemini_key
@@ -602,7 +602,7 @@ def step_keys(state: InstallerState) -> int:
     anthropic_key = state.args.anthropic_key
     if not anthropic_key and not state.non_interactive:
         print("", file=sys.stderr)
-        raw = _prompt_hidden("(optional) ANTHROPIC_API_KEY — only for --tier=max [skip]")
+        raw = _prompt_hidden("(optional) ANTHROPIC_API_KEY, only for --tier=max [skip]")
         raw = raw.strip()
         if raw:
             anthropic_key = raw
@@ -614,7 +614,7 @@ def step_keys(state: InstallerState) -> int:
         _ok("will write ANTHROPIC_API_KEY to .env")
 
     if not updates:
-        _note("no keys provided — .env not modified")
+        _note("no keys provided, .env not modified")
         return EXIT_OK
 
     try:

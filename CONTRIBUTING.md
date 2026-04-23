@@ -6,7 +6,7 @@ Thanks for considering a contribution. This doc covers the architectural invaria
 
 These are load-bearing. Violating them defeats the portability story that justifies this skill's existence:
 
-1. **Only `learn_video/model_client.py` imports `langchain-*` or provider SDKs.** Every stage module (`ingest`, `transcribe`, `probe`, `target`, `keyframes`, `vision`, `summary`, `classify`, `fuse`) calls into `model_client` through `build_chat_model`, `invoke_structured`, and `invoke_vision`. If you find yourself adding `from langchain_google_genai import ...` in a stage, stop — add the feature to `model_client` and call into it instead.
+1. **Only `learn_video/model_client.py` imports `langchain-*` or provider SDKs.** Every stage module (`ingest`, `transcribe`, `probe`, `target`, `keyframes`, `vision`, `summary`, `classify`, `fuse`) calls into `model_client` through `build_chat_model`, `invoke_structured`, and `invoke_vision`. If you find yourself adding `from langchain_google_genai import ...` in a stage, stop. Add the feature to `model_client` and call into it instead.
 
 2. **Stages communicate only via `PipelineState`** (defined in `state.py`). No cross-stage imports of private helpers. If two stages need to share logic, extract it to a utility module (see `ffmpeg_util.py` for the pattern).
 
@@ -30,7 +30,7 @@ python -m unittest discover -s learn_video/tests -t .      # tests
 
 Install the tooling once via the `[dev]` extras: `pip install .[dev]`.
 - **Pure-Python stages** (ingest format selection, cache paths, VTT dedup, target filtering, window splitting, fuse markdown, rate limiter, invoke_structured fallbacks) have full coverage and no network calls.
-- **LLM-touching stages** (probe, target, vision, summary, classify) are tested with mocked `model_client` calls. Don't add tests that hit live APIs — tests must stay hermetic.
+- **LLM-touching stages** (probe, target, vision, summary, classify) are tested with mocked `model_client` calls. Don't add tests that hit live APIs; tests must stay hermetic.
 - **No integration tests against live video URLs** in CI. The README's 12-video demo is a manual smoke test run by maintainers.
 
 ## PR flow
@@ -38,8 +38,8 @@ Install the tooling once via the `[dev]` extras: `pip install .[dev]`.
 1. Fork + branch from `main`.
 2. Write the test first. See existing tests for the style.
 3. Implement.
-4. `python -m unittest discover -s learn_video/tests -t .` — must be green.
-5. `python -m compileall -q learn_video/` — must be clean.
+4. `python -m unittest discover -s learn_video/tests -t .` - must be green.
+5. `python -m compileall -q learn_video/` - must be clean.
 6. If you changed the pipeline graph in `pipeline.py`, update the diagram in `README.md` and `SKILL.md`.
 7. If you touched `config.py` `TIER_MODELS`, add a note to `CHANGELOG.md`.
 8. Open the PR with: what changed, why, and which tests prove it.

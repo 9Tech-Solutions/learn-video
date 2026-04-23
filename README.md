@@ -286,7 +286,7 @@ A batch run on 12 URLs (April 2026) from mixed sources:
 
 ## Status
 
-- 76 unit tests, all green
+- 104 unit tests, all green
 - Verified end-to-end on 12 live URLs (6 TikToks, 4 YouTube standard, 2 YouTube Shorts)
 - Long-video path verified on a 2h 39min talk (10 sliding windows, 25 targets)
 - Short-video File API path verified on 2 YouTube Shorts

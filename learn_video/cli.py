@@ -1,9 +1,9 @@
 """CLI entry point: `python -m learn_video.cli <subcommand> [args]`.
 
 Subcommands:
-  run <url>        — execute the 6-stage pipeline (default)
-  cache-info       — list cached video-ids, sizes, last-used
-  cache-clean ID   — delete one cache dir (or `all`)
+  run <url>        : execute the 6-stage pipeline (default)
+  cache-info       : list cached video-ids, sizes, last-used
+  cache-clean ID   : delete one cache dir (or `all`)
 """
 
 from __future__ import annotations
@@ -116,7 +116,7 @@ def _run(args: argparse.Namespace) -> int:
 
     out_path = final.get("final_md_path")
     if out_path:
-        print(out_path)  # stdout — slash command picks this up
+        print(out_path)  # stdout: slash command picks this up
         return 0
     logging_.fatal("pipeline finished without producing fused.md")
     return 1

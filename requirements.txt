@@ -1,4 +1,4 @@
-# Top-level install — equivalent to `pip install .[full]`.
+# Top-level install; equivalent to `pip install .[full]`.
 # Prefer `pip install .[lite]` (Gemini only), `.[full]` (all providers),
 # or `.[dev]` (contributors). See pyproject.toml for the canonical groups.
 # Or just run: python scripts/install.py

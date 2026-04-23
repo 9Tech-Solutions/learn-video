@@ -1,4 +1,4 @@
-"""LangGraph StateGraph — the narrow orchestrator.
+"""LangGraph StateGraph: the narrow orchestrator.
 
 Graph shape:
 
@@ -34,7 +34,7 @@ def _probe_short_router(state: PipelineState) -> str:
 
 
 def _probe_short_node(state: PipelineState) -> dict[str, Any]:
-    """No-op passthrough — exists purely to anchor the conditional edge."""
+    """No-op passthrough: exists purely to anchor the conditional edge."""
     force_short = bool(state.get("force_short"))
     duration = state.get("duration_s") or 0.0
     if force_short and duration and duration > 60.0:

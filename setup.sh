@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# learn-video — shim that delegates to scripts/install.py.
+# learn-video: shim that delegates to scripts/install.py.
 # The real installer is in Python so Windows PowerShell, macOS, Linux,
 # and git-bash all run the same codepath.
 

@@ -1,4 +1,4 @@
-"""Stage 2 — transcript acquisition.
+"""Stage 2: transcript acquisition.
 
 Order of preference:
   1. Platform auto-captions from ingest (seconds, free, no API).
@@ -31,7 +31,7 @@ def _clean_cue_text(text: str) -> str:
 def _strip_overlap(prev_tail: str, curr: str) -> str:
     """Remove the longest prefix of `curr` that is a suffix of `prev_tail`.
 
-    YouTube's scrolling auto-captions emit each phrase twice — once while
+    YouTube's scrolling auto-captions emit each phrase twice, once while
     "typing in" and once in the next cue's persistent display. The overlap
     between consecutive cues is always a clean suffix/prefix boundary, so
     this greedy match cleans the transcript without touching real content.
@@ -169,7 +169,7 @@ def node(state: dict[str, Any]) -> dict[str, Any]:
             raise TransientError("no captions and no video file to transcribe")
         with logging_.stage(
             "TRANSCRIBE",
-            f"no captions — running faster-whisper {_WHISPER_MODEL} (CPU int8)",
+            f"no captions, running faster-whisper {_WHISPER_MODEL} (CPU int8)",
         ):
             text, segments = _whisper_transcribe(Path(video_path))
             source = "whisper"

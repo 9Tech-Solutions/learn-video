@@ -1,4 +1,4 @@
-"""Pipeline state schema — TypedDict + Pydantic payloads.
+"""Pipeline state schema: TypedDict + Pydantic payloads.
 
 Kept deliberately free of third-party deps beyond Pydantic so every other
 module can import from here without pulling LangChain.
@@ -45,7 +45,7 @@ class VisionInput(BaseModel):
     """Single call input for ``model_client.invoke_vision``.
 
     Exactly one of ``image_b64`` or ``video_path`` should be set for a media
-    attachment; omit both for text-only. ``video_path`` is Gemini-only — the
+    attachment; omit both for text-only. ``video_path`` is Gemini-only; the
     adapter raises for Claude/Ollama.
     """
 
