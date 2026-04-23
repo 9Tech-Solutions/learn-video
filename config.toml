@@ -1,0 +1,26 @@
+# learn-video configuration (user-editable)
+#
+# Precedence (highest → lowest):
+#   1. --model CLI flag
+#   2. LEARN_VIDEO_MODEL env var
+#   3. This file
+#   4. Tier default from model_client.TIER_MODELS
+#
+# Example overrides below (all commented). Uncomment and edit.
+
+[defaults]
+# tier = "lite"                                   # lite | pro | max
+# notes_only = false                              # skip /learn-eval handoff
+
+# [models]
+# targeting = "google_genai:gemini-3.1-flash-lite"
+# vision    = "anthropic:claude-opus-4-7"
+
+# [rate_limits]
+# flash_lite_min_spacing_s = 4.5                  # Gemini Flash Lite free tier
+# max_retries = 3
+# backoff_cap_s = 60
+
+# [whisper]
+# model = "small.en"                              # CPU int8
+# compute_type = "int8"
