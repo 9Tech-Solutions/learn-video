@@ -3,7 +3,7 @@
 [![tests](https://github.com/9Tech-Solutions/learn-video/actions/workflows/tests.yml/badge.svg)](https://github.com/9Tech-Solutions/learn-video/actions/workflows/tests.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
-[![skills.sh](https://img.shields.io/badge/skills.sh-9Tech--Solutions%2Flearn--video-black)](https://skills.sh/9Tech-Solutions/learn-video/learn-video)
+[![skills.sh](https://img.shields.io/badge/skills.sh-9tech--solutions%2Flearn--video-black)](https://skills.sh/9tech-solutions/learn-video/learn-video)
 
 > Read a video the way a careful viewer would: narration paired with what's on screen at the moment an idea is taught.
 
@@ -59,8 +59,10 @@ A 2h 39min conference talk (`W4EwfEU8CGA`, _Let's Handle 1M Requests/sec_) produ
 **As a Claude Code / Codex / Cursor / Windsurf skill** (one command, works everywhere):
 
 ```bash
-npx skills add 9Tech-Solutions/learn-video
+npx skills add 9tech-solutions/learn-video
 ```
+
+Live listing: <https://skills.sh/9tech-solutions/learn-video/learn-video>
 
 The `skills` CLI clones the repo and symlinks the skill into every agent install on your machine. You still need `ffmpeg`, `yt-dlp`, and a `GEMINI_API_KEY` before the pipeline can actually run. The installer below handles the rest.
 
