@@ -53,17 +53,25 @@ def node(state: dict[str, Any]) -> dict[str, Any]:
         return {"frames": []}
 
     video_path_str = state.get("video_path")
-    if not video_path_str or not Path(video_path_str).exists():
-        raise TransientError("keyframes stage needs video_path, none found")
-    video_path = Path(video_path_str)
+    video_path = Path(video_path_str) if video_path_str else None
+    fresh = bool(state.get("fresh"))
+    # The video is only needed for frames that are not already on disk. After
+    # `prune` it is gone, but every frame from the previous run still exists.
+    missing = [t for t in targets if fresh or not paths.frame(t.t).exists()]
+    if missing and (video_path is None or not video_path.exists()):
+        raise TransientError(
+            f"keyframes stage needs the video for {len(missing)} frame(s) but the "
+            "media was pruned, re-run with --fresh to download again"
+        )
 
     segments = _load_segments(paths)
 
     refs: list[FrameRef] = []
-    with logging_.stage("KEYFRAMES", f"extracting {len(targets)} frames via ffmpeg"):
+    with logging_.stage("KEYFRAMES", f"extracting {len(missing)} of {len(targets)} frames via ffmpeg"):
         for target in targets:
             frame_path = paths.frame(target.t)
-            if not frame_path.exists() or state.get("fresh"):
+            # video_path is None only when nothing is missing (checked above)
+            if (not frame_path.exists() or fresh) and video_path is not None:
                 extract_frame(video_path, target.t, frame_path)
             window = _transcript_window(segments, target.t)
             refs.append(

@@ -11,6 +11,7 @@
 [defaults]
 # tier = "lite"                                   # lite | pro | max
 # notes_only = false                              # skip /learn-eval handoff
+# keep_video = false                              # keep video.mp4 after fuse (default: pruned)
 
 # [models]
 # targeting = "google_genai:gemini-3.1-flash-lite"
@@ -20,6 +21,10 @@
 # flash_lite_min_spacing_s = 4.5                  # Gemini Flash Lite free tier
 # max_retries = 3
 # backoff_cap_s = 60
+
+# [agy]
+# model = "gemini-4-argon-high"                   # used when `agy` is on PATH (default route)
+#                                                 # env LEARN_VIDEO_AGY_MODEL overrides, LEARN_VIDEO_AGY=off skips agy
 
 # [whisper]
 # model = "small.en"                              # CPU int8

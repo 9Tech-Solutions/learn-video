@@ -75,8 +75,47 @@ class CachePaths:
         return self.root / "fused.md"
 
 
+MEDIA_EXTS: tuple[str, ...] = ("mp4", "webm", "mkv", "m4a")
+
+
 def paths_for(video_id: str) -> CachePaths:
     return CachePaths(root=CACHE_ROOT / video_id)
+
+
+def find_video(paths: CachePaths) -> Path | None:
+    """Return the downloaded media file if any survives in the cache dir."""
+    for ext in MEDIA_EXTS:
+        candidate = paths.root / f"video.{ext}"
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def has_artifacts(paths: CachePaths) -> bool:
+    """True when the expensive stages already left reusable output behind."""
+    return paths.transcript.exists() or paths.fused.exists()
+
+
+def prune_media(paths: CachePaths) -> int:
+    """Delete the bulky inputs (video + raw captions) once derived artifacts exist.
+
+    Keeps meta.json, transcript.json, targets.json, frames/ and fused.md, which
+    together are ~1% of the download and are all a re-run needs. Returns bytes
+    freed. The caption files are only removed once transcript.json exists, so
+    a run that died before transcription can still resume from captions.
+    """
+    freed = 0
+    victims: list[Path] = [p for p in (find_video(paths),) if p is not None]
+    if paths.transcript.exists():
+        victims.extend(paths.root.glob("video*.vtt"))
+    for victim in victims:
+        try:
+            size = victim.stat().st_size
+            victim.unlink()
+            freed += size
+        except OSError:
+            continue
+    return freed
 
 
 def ensure_dir(video_id: str) -> CachePaths:
@@ -130,9 +169,26 @@ def list_entries() -> list[dict[str, Any]]:
                 "size_bytes": total,
                 "last_used": latest_mtime,
                 "path": str(entry),
+                "has_video": find_video(CachePaths(root=entry)) is not None,
             }
         )
     return out
+
+
+def prune_all() -> tuple[int, int]:
+    """Strip media from every cached entry. Returns (entries_touched, bytes_freed)."""
+    if not CACHE_ROOT.exists():
+        return 0, 0
+    touched = 0
+    freed = 0
+    for entry in sorted(CACHE_ROOT.iterdir()):
+        if not entry.is_dir():
+            continue
+        got = prune_media(CachePaths(root=entry))
+        if got:
+            touched += 1
+            freed += got
+    return touched, freed
 
 
 def write_meta(paths: CachePaths, meta: dict[str, Any]) -> None:

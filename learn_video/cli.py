@@ -4,12 +4,14 @@ Subcommands:
   run <url>        : execute the 6-stage pipeline (default)
   cache-info       : list cached video-ids, sizes, last-used
   cache-clean ID   : delete one cache dir (or `all`)
+  cache-prune      : delete media from every cache dir, keep notes/transcripts
 """
 
 from __future__ import annotations
 
 import argparse
 import datetime as _dt
+import os
 import sys
 from pathlib import Path
 from typing import cast
@@ -37,6 +39,49 @@ def _maybe_load_dotenv() -> None:
     load_dotenv(env_path, override=False)
 
 
+def _default_gemini_api_version() -> None:
+    """google-genai 3.x calls the v1 API by default, where the `-latest` tier aliases 404.
+
+    They exist only on v1beta, so default to it. An explicit GOOGLE_GENAI_API_VERSION wins.
+    """
+    os.environ.setdefault("GOOGLE_GENAI_API_VERSION", "v1beta")
+
+
+def _pick_engine(args: argparse.Namespace) -> str:
+    """agy first. An explicit provider choice (--tier, --model, --offline, --no-agy) means the API stages."""
+    from . import agy
+
+    if args.no_agy or args.offline or args.model or args.tier:
+        return "api"
+    if agy.find_agy():
+        return "agy"
+    logging_.info("agy not found on PATH, using the API stages")
+    return "api"
+
+
+def _require_api_keys(state: PipelineState, loaded: config.LoadedConfig) -> None:
+    """Fail before any download when the API route has no key, so the caller can ask for one."""
+    from . import model_client
+
+    if state["engine"] != "api" or state["offline"]:
+        return
+    for role in ("targeting", "vision"):
+        model_id = config.resolve_model_id(
+            role=role, tier=state["tier"], offline=False,
+            model_override=state["model_override"], loaded=loaded,
+        )
+        try:
+            model_client.verify_api_key(model_id)
+        except ConfigurationError as exc:
+            raise ConfigurationError(
+                f"NO_AGY_NO_API_KEY: agy is not on PATH (or was switched off) and {exc}",
+                fix_hint=(
+                    "install the Antigravity CLI so `agy` is on PATH, or put the key in "
+                    "~/.claude/scripts/learn_video/.env, then re-run"
+                ),
+            ) from exc
+
+
 def _parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="learn-video",
@@ -58,6 +103,11 @@ def _parser() -> argparse.ArgumentParser:
         help="Override vision model, highest precedence (e.g. anthropic:claude-opus-4-7)",
     )
     run_p.add_argument("--offline", action="store_true", help="Route to local Ollama")
+    run_p.add_argument(
+        "--no-agy",
+        action="store_true",
+        help="Skip agy even when it is on PATH and use the API stages (needs an API key)",
+    )
     run_p.add_argument("--fresh", action="store_true", help="Bypass cache")
     run_p.add_argument(
         "--short",
@@ -69,34 +119,47 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Skip /learn-eval handoff (produce fused.md and stop)",
     )
+    run_p.add_argument(
+        "--keep-video",
+        action="store_true",
+        help="Keep video.mp4 in the cache after fuse (default: pruned, ~99%% of bytes)",
+    )
 
     sub.add_parser("cache-info", help="List cached videos")
 
     clean_p = sub.add_parser("cache-clean", help="Delete cache dir(s)")
     clean_p.add_argument("video_id", help="Video id to delete, or `all`")
 
+    sub.add_parser("cache-prune", help="Delete media from all cache dirs, keep artifacts")
+
     return p
 
 
-def _run(args: argparse.Namespace) -> int:
-    _maybe_load_dotenv()
-    loaded = config.load()
-    tier = args.tier or loaded.tier_default
-
-    from .pipeline import run as run_pipeline  # lazy import: needs langgraph
-
+def _initial_state(args: argparse.Namespace, loaded: config.LoadedConfig) -> PipelineState:
     # PipelineState is a total=False TypedDict; cast makes mypy happy.
-    initial = cast(PipelineState, {
+    return cast(PipelineState, {
         "url": args.url,
-        "tier": tier,
+        "engine": _pick_engine(args),
+        "tier": args.tier or loaded.tier_default,
         "offline": bool(args.offline),
         "model_override": args.model,
         "force_short": bool(args.short),
         "fresh": bool(args.fresh),
         "notes_only": bool(args.notes_only) or loaded.notes_only_default,
+        "keep_video": bool(args.keep_video) or loaded.keep_video_default,
     })
 
+
+def _run(args: argparse.Namespace) -> int:
+    _maybe_load_dotenv()
+    _default_gemini_api_version()
+    loaded = config.load()
+
+    from .pipeline import run as run_pipeline  # lazy import: needs langgraph
+
     try:
+        initial = _initial_state(args, loaded)
+        _require_api_keys(initial, loaded)
         final = run_pipeline(initial)
     except ConfigurationError as exc:
         logging_.fatal(str(exc), fix_hint=exc.fix_hint)
@@ -133,8 +196,15 @@ def _cache_info(_args: argparse.Namespace) -> int:
         last = _dt.datetime.fromtimestamp(e["last_used"]).strftime("%Y-%m-%d %H:%M")
         size_mb = e["size_bytes"] / (1024 * 1024)
         total_bytes += e["size_bytes"]
-        print(f"  {e['video_id']:<{width}}  {size_mb:8.1f} MB   {last}")
+        media = "video" if e.get("has_video") else "pruned"
+        print(f"  {e['video_id']:<{width}}  {size_mb:8.1f} MB   {last}   {media}")
     print(f"  {'TOTAL':<{width}}  {total_bytes / (1024 * 1024):8.1f} MB")
+    return 0
+
+
+def _cache_prune(_args: argparse.Namespace) -> int:
+    touched, freed = cache.prune_all()
+    print(f"pruned media from {touched} cache dir(s), freed {freed / (1024 * 1024):.1f} MB")
     return 0
 
 
@@ -157,6 +227,8 @@ def main(argv: list[str] | None = None) -> int:
         return _cache_info(args)
     if args.cmd == "cache-clean":
         return _cache_clean(args)
+    if args.cmd == "cache-prune":
+        return _cache_prune(args)
     parser.print_help()
     return 2
 

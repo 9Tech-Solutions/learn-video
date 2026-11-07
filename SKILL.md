@@ -1,6 +1,6 @@
 ---
 name: learn-video
-description: Extract reusable knowledge from a YouTube/TikTok/Vimeo URL via a 6-stage audio+visual fused timeline (ingest → transcribe → probe → target/summary → vision → classify → fuse). Hands off to /learn-eval so the output lands in the right bin (skill, rule, tip, note, discard). Use this when the user shares a video URL and wants extracted notes, not when they want the video downloaded or clipped.
+description: Extract reusable knowledge from a YouTube/TikTok/Vimeo URL via an audio+visual fused timeline. agy (Antigravity CLI) watches the whole video when it is installed, otherwise a 6-stage API pipeline runs (ingest → transcribe → probe → target/summary → vision → classify → fuse). Hands off to /learn-eval so the output lands in the right bin (skill, rule, tip, note, discard). Use this when the user shares a video URL and wants extracted notes, not when they want the video downloaded or clipped.
 license: MIT. See LICENSE.
 ---
 
@@ -9,6 +9,12 @@ license: MIT. See LICENSE.
 Pull a video from any `yt-dlp`-supported site (1800+ including YouTube, TikTok, Vimeo), align its audio with what's on screen, and produce a `fused.md` timeline ready for `/learn-eval` to save as a `SKILL.md`, rule, tip, or note.
 
 Unlike transcript-only skills, this one uses an LLM to pick which timestamps need a visual reference, extracts just those frames with ffmpeg, and asks a vision model to fuse each frame with its transcript window. The output reads as `AUDIO / VISUAL / FUSED` blocks aligned to `[mm:ss]` markers.
+
+## Routing: agy first
+
+When `agy` (the Antigravity CLI) is on PATH, the CLI hands the whole downloaded video to agy in one call: it watches picture and sound, reads the platform transcript for wording, and returns the timeline, `video-kind` and `recommended-form` as JSON checked against a schema. That route needs no API key and runs on agy's own quota. agy runs with `--sandbox --mode plan` (read only), because the video and its transcript come from the internet.
+
+Pass `--tier`, `--model`, `--offline` or `--no-agy` (or set `LEARN_VIDEO_AGY=off`) to use the API stages instead. When agy is missing and no API key is set, the run stops with `NO_AGY_NO_API_KEY` before downloading anything, so the agent can ask the user to install agy or add a key.
 
 ## When to use
 
@@ -33,12 +39,14 @@ python -m learn_video.cli run "https://www.youtube.com/watch?v=<id>"
 
 # flags
 python -m learn_video.cli run "<url>" \
-  --tier=lite|pro|max        # model quality preset
+  --no-agy                   # skip agy even when it is on PATH
+  --tier=lite|pro|max        # model quality preset (implies the API stages)
   --model=<provider:model>   # override vision model (highest precedence)
   --offline                  # route to local Ollama
   --fresh                    # bypass cache
   --short                    # force whole-video File API upload (fails if >60s)
   --notes-only               # skip /learn-eval handoff
+  --keep-video               # keep the downloaded media after fuse (default: pruned)
 ```
 
 Stdout is the path to `fused.md`. Stderr carries `[N/6 STAGE]` progress lines. Claude should read `fused.md` after the CLI returns and hand off to `/learn-eval` unless `--notes-only`.
@@ -57,7 +65,8 @@ The slash command `~/.claude/commands/learn-video.md` drives Claude to:
 
 | Stage | Module | Purpose |
 |---|---|---|
-| 1. Ingest | `ingest.py` | `yt-dlp` metadata probe + download; picks 720p/480p/360p by duration |
+| 1. Ingest | `ingest.py` | `yt-dlp` metadata probe + download; capped at 480p (360p past 90 min), caption failures only warn |
+| agy route | `agy.py` | Whole video to `agy` in one sandboxed call, replaces probe/target/keyframes/vision/classify |
 | 2. Transcribe | `transcribe.py` | Platform auto-captions first, `faster-whisper small.en` fallback |
 | Probe | `probe.py` | Classifies video as `visual | audio | mixed` from 5 sample frames |
 | 3a. Target | `target.py` | LLM picks 3–15 timestamps worth a frame (sliding 15-min windows for >25-min videos) |
@@ -94,6 +103,7 @@ Targeting always stays on Flash Lite; it's a cheap text task, and keeping the pr
 
 ```bash
 python -m learn_video.cli cache-info             # list cached videos
+python -m learn_video.cli cache-prune            # drop media, keep notes and transcripts
 python -m learn_video.cli cache-clean <video-id> # remove one
 python -m learn_video.cli cache-clean all        # nuke everything
 ```
@@ -112,7 +122,8 @@ python -m learn_video.cli cache-clean all        # nuke everything
 - Python 3.13 (tested; 3.11+ should work, `tomllib` fallback to `tomli` already in place)
 - `ffmpeg` on PATH
 - `yt-dlp` on PATH (installed via `pip install -r requirements.txt`)
-- `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) for the default `lite` / `pro` tiers
+- `agy` (Antigravity CLI) on PATH for the default route, no API key needed
+- `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) for the `lite` / `pro` tiers when agy is not used
 - `ANTHROPIC_API_KEY` if using `--tier=max` or `--model anthropic:*`
 - Local Ollama with `qwen2.5vl:3b` pulled if using `--offline`
 

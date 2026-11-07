@@ -11,6 +11,7 @@ from typing import Literal, TypedDict
 from pydantic import BaseModel, Field
 
 Tier = Literal["lite", "pro", "max"]
+Engine = Literal["agy", "api"]
 Role = Literal["targeting", "vision"]
 TranscriptSource = Literal["captions", "whisper"]
 VideoKind = Literal["visual", "audio", "mixed"]
@@ -64,6 +65,8 @@ class PipelineState(TypedDict, total=False):
     force_short: bool
     fresh: bool
     notes_only: bool
+    keep_video: bool
+    engine: Engine
 
     # --- Populated during run ---
     cache_dir: str

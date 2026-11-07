@@ -4,8 +4,20 @@ All notable changes to this project are documented here. Format follows [Keep a 
 
 ## [Unreleased]
 
+### Added
+
+- **agy route**: when `agy` (the Antigravity CLI) is on PATH, a plain run hands the whole video to agy in one `--sandbox --mode plan` call with `--json-schema` output. No API key needed. New `agy.py`, `--no-agy`, `LEARN_VIDEO_AGY=off`, `LEARN_VIDEO_AGY_MODEL` and `[agy] model`. Videos over 60 MB get a 360p proxy first.
+- **Key preflight**: on the API route a missing key now stops the run with `NO_AGY_NO_API_KEY` before any download.
+- **Media pruning**: downloaded media and raw captions are deleted once `fused.md` exists. `--keep-video` / `keep_video` keep them, `cache-prune` cleans every entry, and re-runs work from the cached artifacts (vision blocks are cached in `meta.json`).
+
+### Fixed
+
+- A caption download failure (YouTube HTTP 429) no longer aborts the whole download: `--ignore-errors` makes it a warning and whisper transcribes instead. A failed video download still fails the run.
+- google-genai 3.x calls the v1 API by default, where the `-latest` tier aliases return 404. The CLI now defaults `GOOGLE_GENAI_API_VERSION` to `v1beta`.
+
 ### Changed
 
+- **Downloads** are capped at 480p (360p past 90 min). The video only feeds JPEG frame grabs, so 720p cost bytes without readable gain.
 - **Docs**: README, CHANGELOG, CONTRIBUTING, `docs/*.md`, `SKILL.md`, and `commands/learn-video.md` rewritten to drop em dashes (U+2014) in favor of hyphens, commas, parentheses, or sentence splits. Applies to Python docstrings / comments and the single `pyproject.toml` comment as well.
 - **Docs**: README test-count claim synced with the actual suite.
 - **Chore**: `learn_video.__version__` bumped to `0.2.0` so the in-package constant matches `pyproject.toml`.

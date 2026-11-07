@@ -6,6 +6,7 @@ so the probe_short router in ``pipeline.py`` can branch.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import shutil
 import subprocess
@@ -57,16 +58,16 @@ def _probe_metadata(url: str) -> dict[str, Any]:
 def _format_for_duration(duration_s: float) -> str:
     """Pick a yt-dlp format string scaled to video length.
 
-    Long videos at 720p blow past download timeouts (a 2.5h talk is ~3GB).
-    Frame quality matters for the vision stage, but 480p is readable for
-    most code-on-screen content, and 360p is fine for anything that would
-    be classified as audio-first anyway.
+    The video only feeds ffmpeg frame grabs (JPEG q4) and, for <60s clips,
+    one Gemini upload. 480p is readable for code-on-screen content and is
+    roughly half the bytes of 720p, so it is the ceiling for everything up
+    to 90 min. Past that, 360p: the probe classifies most of those as
+    audio-first anyway. Raise the cap here if a run produces unreadable
+    frames.
     """
     if duration_s > 90 * 60:       # >1.5h → 360p
         return "bv*[height<=360]+ba/b[height<=360]/worst"
-    if duration_s > 30 * 60:       # 30–90min → 480p
-        return "bv*[height<=480]+ba/b[height<=480]/best"
-    return "bv*[height<=720]+ba/b[height<=720]/best"
+    return "bv*[height<=480]+ba/b[height<=480]/best"
 
 
 def _timeout_for_duration(duration_s: float) -> int:
@@ -86,6 +87,12 @@ def _download_video(url: str, out_dir: Path, duration_s: float = 0.0) -> Path:
             "--write-auto-subs",
             "--sub-langs", "en.*",
             "--sub-format", "vtt",
+            # Captions are best effort. YouTube answers the caption endpoint
+            # with HTTP 429 under rate limits, and yt-dlp's default
+            # ignoreerrors='only_download' turns that into a fatal error with
+            # no video. -i downgrades it to a warning, a failed video download
+            # still exits 1, and transcribe falls back to whisper.
+            "--ignore-errors",
             "-o", tmpl,
             "--no-warnings",
             url,
@@ -98,36 +105,59 @@ def _download_video(url: str, out_dir: Path, duration_s: float = 0.0) -> Path:
     if proc.returncode != 0:
         raise TransientError(f"yt-dlp download failed: {proc.stderr.strip()}")
     # yt-dlp may land on .mp4 / .webm / .mkv depending on sources
-    for ext in ("mp4", "webm", "mkv", "m4a"):
-        candidate = out_dir / f"video.{ext}"
-        if candidate.exists():
-            return candidate
-    raise TransientError("yt-dlp completed but no output file found")
+    found = cache.find_video(cache.CachePaths(root=out_dir))
+    if found is None:
+        raise TransientError("yt-dlp completed but no output file found")
+    return found
 
 
 def _find_caption(out_dir: Path) -> Path | None:
-    for candidate in sorted(out_dir.glob("video*.vtt")):
-        return candidate
-    return None
+    """Pick one caption track and drop the duplicates.
+
+    `--sub-langs en.*` pulls both `en` and `en-orig` for English videos, and
+    they are byte-identical for auto-captions. Keep the first sorted track and
+    delete the rest so a 2.5h talk does not store 1.4 MB twice.
+    """
+    candidates = sorted(out_dir.glob("video*.vtt"))
+    if not candidates:
+        return None
+    keep, *extras = candidates
+    for extra in extras:
+        with contextlib.suppress(OSError):
+            extra.unlink()
+    return keep
 
 
 def node(state: dict[str, Any]) -> dict[str, Any]:
     """LangGraph node: returns the state keys it updates."""
     url = state["url"]
     video_id = state.get("video_id") or cache.derive_video_id(url)
-    paths = cache.ensure_dir(video_id)
+    # Do not create the dir yet: for non-YouTube URLs the derived id is a
+    # URL hash that yt-dlp replaces with the canonical id below, and an
+    # early mkdir leaves an empty orphan folder per run.
+    paths = cache.paths_for(video_id)
 
     with logging_.stage("INGEST", f"probing metadata for {url}"):
-        # Cache check: if we already have video + meta, skip the network.
+        # Cache check: meta + (video OR derived artifacts) means no network.
+        # After `prune` the video is gone but transcript/frames/fused remain,
+        # and every downstream stage can run from those.
         existing_meta = cache.read_meta(paths)
-        have_video = paths.video.exists() or any(paths.root.glob("video.*"))
-        if existing_meta.get("duration_s") is not None and have_video and not state.get("fresh"):
-            logging_.info(f"cache hit, video_id={video_id}")
+        video_file = cache.find_video(paths)
+        resumable = video_file is not None or cache.has_artifacts(paths)
+        if existing_meta.get("duration_s") is not None and resumable and not state.get("fresh"):
+            logging_.info(
+                f"cache hit, video_id={video_id}"
+                + ("" if video_file else " (media pruned, running from artifacts)")
+            )
             duration = float(existing_meta["duration_s"])
             title = existing_meta.get("title")
-            video_path = existing_meta.get("video_path") or str(next(iter(paths.root.glob("video.*"))))
             captions_path = existing_meta.get("captions_path")
-            return _ingest_return(video_id, paths, title, duration, video_path, captions_path)
+            if captions_path and not Path(captions_path).exists():
+                captions_path = None
+            return _ingest_return(
+                video_id, paths, title, duration,
+                str(video_file) if video_file else None, captions_path,
+            )
 
         meta = _probe_metadata(url)
 
@@ -143,6 +173,8 @@ def node(state: dict[str, Any]) -> dict[str, Any]:
     ):
         video_path = _download_video(url, paths.root, duration_s=duration)
     captions_path = _find_caption(paths.root)
+    if captions_path is None:
+        logging_.warn("no platform captions (missing or rate limited), whisper will transcribe")
 
     cache.update_meta(
         paths,
