@@ -76,11 +76,41 @@ def _extract_visual_and_fused(content: str) -> tuple[str | None, str]:
     return visual, fused
 
 
+def _cached_blocks(paths: cache.CachePaths, state: dict[str, Any]) -> dict[str, Any] | None:
+    """Reuse the previous run's fused blocks (stored in meta.json) unless --fresh.
+
+    Vision is the only paid stage that used to re-run on every invocation.
+    Persisting its output makes a non-fresh re-run cost zero API calls and
+    zero bytes of video.
+    """
+    if state.get("fresh"):
+        return None
+    meta = cache.read_meta(paths)
+    raw = meta.get("vision_blocks")
+    if not raw:
+        return None
+    blocks = [FusedBlock.model_validate(b) for b in raw]
+    logging_.info(f"vision cache hit ({len(blocks)} blocks)")
+    return {"fused_blocks": blocks, "vision_model_id": meta.get("vision_model_id", "")}
+
+
+def _store_blocks(paths: cache.CachePaths, blocks: list[FusedBlock], model_id: str, **extra: Any) -> None:
+    cache.update_meta(
+        paths,
+        vision_blocks=[b.model_dump() for b in blocks],
+        vision_model_id=model_id,
+        **extra,
+    )
+
+
 def per_frame_node(state: dict[str, Any]) -> dict[str, Any]:
     video_id = state["video_id"]
     paths = cache.paths_for(video_id)
     frames: list[FrameRef] = list(state.get("frames") or [])
 
+    cached = _cached_blocks(paths, state)
+    if cached is not None:
+        return cached
     if not frames:
         return {"fused_blocks": [], "vision_model_id": ""}
 
@@ -138,7 +168,7 @@ def per_frame_node(state: dict[str, Any]) -> dict[str, Any]:
             f"{failures}/{len(frames)} vision calls failed, continuing with {len(blocks)} blocks"
         )
 
-    cache.update_meta(paths, vision_model_id=model_id)
+    _store_blocks(paths, blocks, model_id)
     return {"fused_blocks": blocks, "vision_model_id": model_id}
 
 
@@ -146,9 +176,15 @@ def whole_video_node(state: dict[str, Any]) -> dict[str, Any]:
     """Short-video fast path: single File API upload, single call."""
     video_id = state["video_id"]
     paths = cache.paths_for(video_id)
+    cached = _cached_blocks(paths, state)
+    if cached is not None:
+        return cached
     video_path = state.get("video_path")
-    if not video_path:
-        raise ConfigurationError("whole_video_node requires video_path in state")
+    if not video_path or not Path(video_path).exists():
+        raise ConfigurationError(
+            "whole-video path needs the media file but it was pruned",
+            fix_hint="re-run with --fresh to download again",
+        )
 
     model_id = config.resolve_model_id(
         role="vision",
@@ -177,7 +213,7 @@ def whole_video_node(state: dict[str, Any]) -> dict[str, Any]:
 
     # Parse blocks from the model's timeline output.
     blocks: list[FusedBlock] = _parse_timeline(str(content))
-    cache.update_meta(paths, vision_model_id=model_id, path="whole_video")
+    _store_blocks(paths, blocks, model_id, path="whole_video")
     return {"fused_blocks": blocks, "vision_model_id": model_id}
 
 

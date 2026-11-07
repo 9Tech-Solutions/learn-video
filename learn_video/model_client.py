@@ -175,7 +175,7 @@ def build_chat_model(model_id: str, **kwargs: Any):
     Uses ``langchain.chat_models.init_chat_model`` so adding a new provider
     is a requirements.txt edit, not a code change here.
     """
-    _verify_api_key(model_id)
+    verify_api_key(model_id)
     try:
         from langchain.chat_models import init_chat_model
     except ImportError as exc:
@@ -188,7 +188,7 @@ def build_chat_model(model_id: str, **kwargs: Any):
     return init_chat_model(model_id, temperature=0, **kwargs)
 
 
-def _verify_api_key(model_id: str) -> None:
+def verify_api_key(model_id: str) -> None:
     provider = model_id.split(":", 1)[0]
     required = {
         "google_genai": ("GOOGLE_API_KEY", "GEMINI_API_KEY"),

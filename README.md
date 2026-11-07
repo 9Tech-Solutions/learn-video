@@ -199,11 +199,15 @@ See [`docs/architecture.md`](docs/architecture.md) for the full design rationale
 
 ## Configuration
 
+### Route: agy first
+
+With the Antigravity CLI (`agy`) on PATH, a plain run hands the whole video to agy in one sandboxed, read-only call and needs no API key. `--tier`, `--model`, `--offline` or `--no-agy` (or `LEARN_VIDEO_AGY=off`) select the API tiers below. The agy model defaults to `gemini-4-argon-high`, set by `LEARN_VIDEO_AGY_MODEL` or `[agy] model` in `config.toml`. Without agy and without a key, the run stops with `NO_AGY_NO_API_KEY` before downloading anything.
+
 ### Tier presets
 
 | `--tier` | Targeting | Vision | Quota headroom |
 |---|---|---|---|
-| `lite` (default) | `gemini-flash-lite-latest` | `gemini-flash-lite-latest` | ~100 videos/day on the free 500 RPD |
+| `lite` (default API tier) | `gemini-flash-lite-latest` | `gemini-flash-lite-latest` | ~100 videos/day on the free 500 RPD |
 | `pro` | `gemini-flash-lite-latest` | `gemini-flash-latest` | 20 RPD cap on Flash |
 | `max` | `gemini-flash-lite-latest` | `claude-opus-4-7` | Uses Claude quota |
 | `--offline` | `qwen2.5vl:3b` (Ollama) | `qwen2.5vl:3b` | Local, slow |
@@ -222,12 +226,14 @@ Edit `config.toml` in the repo root. It's commented and safe to copy into `~/.cl
 ### Flags
 
 ```
---tier=lite|pro|max         # Quality preset (default: lite)
+--no-agy                    # Skip agy even when it is on PATH
+--tier=lite|pro|max         # Quality preset (default: lite), implies the API stages
 --model=<provider:model>    # Override vision model (highest precedence)
 --offline                   # Route to local Ollama
 --fresh                     # Bypass cache for this run
 --short                     # Force whole-video File API upload (fails if >60s)
 --notes-only                # Skip /learn-eval handoff
+--keep-video                # Keep the downloaded media after fuse (default: pruned)
 ```
 
 ### Cache
@@ -236,7 +242,7 @@ Artifacts live under `~/.claude/cache/learn-video/<video-id>/`:
 
 ```
 meta.json       # duration, tier, model ids used, timestamps
-video.*         # downloaded video (360p/480p/720p per duration)
+video.*         # downloaded video, capped at 480p (360p past 90 min), pruned after fuse
 video.en.vtt    # platform captions if available
 transcript.json # deduped text + timestamped segments
 targets.json    # [{t, why}]
@@ -249,6 +255,7 @@ Manage it:
 
 ```bash
 python -m learn_video.cli cache-info
+python -m learn_video.cli cache-prune
 python -m learn_video.cli cache-clean <video-id>
 python -m learn_video.cli cache-clean all
 ```
@@ -282,13 +289,14 @@ A batch run on 12 URLs (April 2026) from mixed sources:
 | `ffmpeg` | keyframe extraction |
 | `yt-dlp` (via pip) | video download across 1800+ sites |
 | `faster-whisper small.en` | captions fallback (auto-downloads on first use, ~460MB) |
-| `GEMINI_API_KEY` | default `lite`/`pro` tiers |
+| `agy` (Antigravity CLI) | default route, watches the whole video, no API key |
+| `GEMINI_API_KEY` | `lite`/`pro` tiers when agy is not used |
 | `ANTHROPIC_API_KEY` | `--tier=max` or `--model anthropic:*` |
 | Ollama + `qwen2.5vl:3b` | `--offline` only |
 
 ## Status
 
-- 104 unit tests, all green
+- 140 unit tests, all green
 - Verified end-to-end on 12 live URLs (6 TikToks, 4 YouTube standard, 2 YouTube Shorts)
 - Long-video path verified on a 2h 39min talk (10 sliding windows, 25 targets)
 - Short-video File API path verified on 2 YouTube Shorts

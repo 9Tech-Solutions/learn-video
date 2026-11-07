@@ -13,38 +13,13 @@ import os
 
 # Python 3.11+ has tomllib in stdlib; older installs use tomli.
 import tomllib as _toml
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from .state import Role, Tier
 
-
-def _resolve_config_path() -> Path | None:
-    """Find ``config.toml`` without hardcoding install layout.
-
-    Checks, in order:
-      1. ``LEARN_VIDEO_CONFIG`` env var (explicit override)
-      2. Same directory as this module (legacy in-package layout)
-      3. Parent directory (repo-root layout when installed via pip)
-      4. ``~/.claude/scripts/learn_video/config.toml`` (slash-command install)
-    """
-    env = os.environ.get("LEARN_VIDEO_CONFIG")
-    if env:
-        p = Path(env).expanduser()
-        return p if p.exists() else None
-    here = Path(__file__).resolve().parent
-    for candidate in (
-        here / "config.toml",
-        here.parent / "config.toml",
-        Path.home() / ".claude" / "scripts" / "learn_video" / "config.toml",
-    ):
-        if candidate.exists():
-            return candidate
-    return None
-
-
-CONFIG_PATH: Path | None = _resolve_config_path()
+CONFIG_PATH = Path.home() / ".claude" / "scripts" / "learn_video" / "config.toml"
 
 # Tier → (role → model_id). See plan §3.
 # Use the `-latest` aliases: Google rotates them as new models ship, so the
@@ -82,11 +57,13 @@ class LoadedConfig:
     notes_only_default: bool
     rate_limits: dict[str, Any]
     whisper: dict[str, Any]
+    keep_video_default: bool = False
+    agy: dict[str, Any] = field(default_factory=dict)
 
 
 def load() -> LoadedConfig:
     data: dict[str, Any] = {}
-    if _toml is not None and CONFIG_PATH is not None and CONFIG_PATH.exists():
+    if _toml is not None and CONFIG_PATH.exists():
         try:
             with CONFIG_PATH.open("rb") as fh:
                 data = _toml.load(fh)
@@ -96,6 +73,7 @@ def load() -> LoadedConfig:
     models = data.get("models", {}) if isinstance(data, dict) else {}
     rate_limits = data.get("rate_limits", {}) if isinstance(data, dict) else {}
     whisper = data.get("whisper", {}) if isinstance(data, dict) else {}
+    agy = data.get("agy", {}) if isinstance(data, dict) else {}
 
     tier = defaults.get("tier", "lite")
     if tier not in TIER_MODELS:
@@ -111,8 +89,10 @@ def load() -> LoadedConfig:
         tier_default=tier,
         model_overrides=overrides,
         notes_only_default=bool(defaults.get("notes_only", False)),
+        keep_video_default=bool(defaults.get("keep_video", False)),
         rate_limits=dict(rate_limits),
         whisper=dict(whisper),
+        agy=dict(agy) if isinstance(agy, dict) else {},
     )
 
 
